@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Financeiro</title>
+  <meta name="description" content="Dashboard financeiro pessoal alimentado por planilha Google, 100% front-end." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet" />
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/responsive.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <div class="app-header__title">
+        <span class="material-symbols-outlined app-header__icon" aria-hidden="true">account_balance_wallet</span>
+        <h1>Dashboard Financeiro</h1>
+      </div>
+
+      <div class="app-header__actions">
+        <label class="year-filter" for="year-select">
+          <span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>
+          <select id="year-select" aria-label="Filtrar por ano"></select>
+        </label>
+
+        <button id="refresh-button" class="btn-refresh" type="button">
+          <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
+          <span>Atualizar Dados</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <!-- Estado: carregando -->
+      <section id="state-loading" class="state state-loading" aria-live="polite">
+        <div class="spinner" role="status" aria-label="Carregando dados"></div>
+        <p>Carregando dados da planilha...</p>
+      </section>
+
+      <!-- Estado: erro -->
+      <section id="state-error" class="state state-error" hidden aria-live="assertive">
+        <span class="material-symbols-outlined state-error__icon" aria-hidden="true">error</span>
+        <h2>Não foi possível carregar o dashboard</h2>
+        <p id="error-message">Ocorreu um erro inesperado.</p>
+        <button id="retry-button" class="btn-retry" type="button" onclick="document.getElementById('refresh-button').click()">
+          Tentar novamente
+        </button>
+      </section>
+
+      <!-- Estado: vazio -->
+      <section id="state-empty" class="state state-empty" hidden>
+        <span class="material-symbols-outlined state-empty__icon" aria-hidden="true">inbox</span>
+        <h2>Nenhum registro encontrado</h2>
+        <p>A planilha foi carregada, mas ainda não possui dados na aba "Geral".</p>
+      </section>
+
+      <!-- Conteúdo principal do dashboard -->
+      <section id="dashboard-content" class="dashboard" hidden>
+        <div class="cards-grid">
+          <article class="card" aria-labelledby="card-total-cartoes-label">
+            <div class="card__icon card__icon--primary" aria-hidden="true">
+              <span class="material-symbols-outlined">credit_card</span>
+            </div>
+            <div class="card__body">
+              <p id="card-total-cartoes-label" class="card__label">Total Cartões (Próximo mês)</p>
+              <p id="card-total-cartoes-value" class="card__value">R$ 0,00</p>
+              <p id="card-total-cartoes-month" class="card__meta">—</p>
+            </div>
+          </article>
+
+          <article class="card" aria-labelledby="card-outras-despesas-label">
+            <div class="card__icon card__icon--secondary" aria-hidden="true">
+              <span class="material-symbols-outlined">account_balance</span>
+            </div>
+            <div class="card__body">
+              <p id="card-outras-despesas-label" class="card__label">Outras Despesas (Próximo mês)</p>
+              <p id="card-outras-despesas-value" class="card__value">R$ 0,00</p>
+              <p id="card-outras-despesas-month" class="card__meta">—</p>
+            </div>
+          </article>
+        </div>
+
+        <section class="chart-panel">
+          <h2 class="chart-panel__title">Totais Mensais</h2>
+          <div id="main-chart" class="chart-panel__chart" role="img" aria-label="Gráfico de barras com o total financeiro de cada mês"></div>
+        </section>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>Última atualização: <time id="last-sync-time">—</time></p>
+    </footer>
+  </div>
+
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

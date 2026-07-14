@@ -1,0 +1,69 @@
+/* Tablet */
+@media (max-width: 900px) {
+  .app-header {
+    padding: var(--space-4);
+  }
+
+  .app-main {
+    padding: var(--space-4);
+  }
+
+  .chart-panel__chart {
+    min-height: 380px;
+  }
+}
+
+/* Smartphone */
+@media (max-width: 600px) {
+  .app-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+
+  .app-header__title h1 {
+    font-size: 1.1rem;
+  }
+
+  .app-header__actions {
+    justify-content: space-between;
+  }
+
+  .year-filter {
+    flex: 1;
+  }
+
+  .cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    padding: var(--space-4);
+  }
+
+  .card__value {
+    font-size: 1.4rem;
+  }
+
+  .chart-panel {
+    padding: var(--space-4) var(--space-3);
+  }
+
+  .chart-panel__title {
+    margin-bottom: var(--space-3);
+    font-size: 1rem;
+  }
+
+  /* Altura extra para acomodar os rótulos de mês inclinados sem cortar nem
+     sobrepor os valores do eixo, já que o gráfico agora é de colunas verticais. */
+  .chart-panel__chart {
+    min-height: 340px;
+  }
+}
+
+/* Telas muito estreitas: ainda mais espaço vertical para os rótulos inclinados. */
+@media (max-width: 380px) {
+  .chart-panel__chart {
+    min-height: 360px;
+  }
+}
