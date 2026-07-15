@@ -1,0 +1,15 @@
+{
+  "name": "financeiro-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "migrate:local": "wrangler d1 migrations apply financeiro-db --local",
+    "migrate:remote": "wrangler d1 migrations apply financeiro-db --remote"
+  },
+  "devDependencies": {
+    "wrangler": "^3.90.0"
+  }
+}

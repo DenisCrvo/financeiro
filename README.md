@@ -1,120 +1,190 @@
-# Dashboard Financeiro
+# Financeiro — Sistema de Previsão de Despesas Pessoais
 
-Dashboard financeiro 100% front-end (HTML5 + CSS3 + JavaScript ES6+), sem backend,
-sem frameworks e sem bibliotecas de terceiros além do Google Charts. A única fonte
-de dados é uma planilha Google publicada na web (aba **Geral**), consumida via
-Fetch API no formato CSV.
+Sistema web para cadastro de despesas e **previsão** de gastos futuros (não apenas
+controle do que já foi gasto). Composto por uma tela de cadastro e um dashboard
+financeiro, hospedados no GitHub Pages, com API própria em Cloudflare Workers e
+persistência em Cloudflare D1.
 
-## Arquitetura
+- **Frontend:** HTML5 + CSS3 + JavaScript ES6+ (módulos nativos) + Bootstrap 5 + Chart.js
+- **Backend:** Cloudflare Workers (API REST, sem framework)
+- **Banco:** Cloudflare D1 (SQLite)
+- **Hospedagem do frontend:** GitHub Pages
+
+## Estrutura do projeto
 
 ```
-/
-├── index.html              Estrutura da página (header, cards, gráfico, rodapé)
-├── css/
-│   ├── style.css           Design system, layout e componentes visuais
-│   └── responsive.css      Breakpoints para tablet e smartphone
-├── js/
-│   ├── config.js           Configuração central (URL do CSV, colunas, locale)
-│   ├── api.js               Busca o CSV publicado via Fetch API
-│   ├── data.js              Parser CSV puro + processamento (agrupamento, totais, próximo mês)
-│   ├── charts.js            Renderização do gráfico principal (Google Charts)
-│   ├── cards.js              Cálculo e renderização dos cards de indicadores
-│   ├── ui.js                 Estados da aplicação (loading/erro/vazio) e eventos de DOM
-│   ├── utils.js              Funções puras (parse de moeda, formatação, datas)
-│   └── app.js                 Ponto de entrada: orquestra os módulos acima
-└── assets/                  Ícones, imagens e fontes locais (se necessário)
+financeiro/
+├─ index.html              # Cadastro de despesas
+├─ dashboard.html           # Dashboard financeiro
+├─ css/style.css
+├─ js/
+│  ├─ app.js                # Orquestração da tela de cadastro
+│  ├─ dashboard.js          # Orquestração do dashboard
+│  ├─ api.js                # Comunicação com a API (fetch + API key)
+│  └─ utils.js              # Formatação, máscaras, datas
+├─ components/
+│  ├─ modal.js               # Modal de confirmação e de nova despesa
+│  └─ toast.js
+├─ services/
+│  └─ financeiroService.js   # Regras de negócio (cálculo de VT, validações)
+├─ assets/icons/
+├─ worker/                   # API — NÃO é publicado no GitHub Pages
+│  ├─ src/index.js            # Router + autenticação + CORS
+│  ├─ src/utils.js
+│  ├─ src/routes/*.js         # Um arquivo por recurso da API
+│  ├─ migrations/0001_init.sql
+│  ├─ wrangler.toml
+│  ├─ package.json
+│  └─ API.md                  # Documentação dos endpoints
+├─ .gitignore
+└─ README.md
 ```
 
-Cada módulo tem uma única responsabilidade e não conhece detalhes internos dos
-demais — a comunicação acontece por meio de funções exportadas e parâmetros
-explícitos, nunca por variáveis globais.
+> O diretório `worker/` roda em Cloudflare Workers e **não deve** ser incluído
+> na publicação do GitHub Pages — ele contém a lógica de backend e, em
+> desenvolvimento local, a chave de API de teste (`.dev.vars`, já no `.gitignore`).
 
-## Fluxo de funcionamento
+## Como instalar
 
-1. `app.js` aguarda o DOM e inicializa o Google Charts (`charts.js`).
-2. `data.js` busca o CSV (`api.js`), faz o parser (RFC4180 simplificado) e
-   transforma as linhas em objetos `{ ano, mes, mesIndex, valores, total }`,
-   guardando o resultado em cache de memória.
-3. `app.js` popula o filtro de anos (`ui.js`), desenha o gráfico do ano mais
-   recente (`charts.js`) e atualiza os cards com o próximo mês disponível
-   (`cards.js`).
-4. Ao trocar o ano no filtro, apenas o gráfico e os cards são atualizados —
-   sem nova busca à planilha.
-5. Ao clicar em "Atualizar Dados", o cache é invalidado, o CSV é buscado
-   novamente e toda a interface é atualizada, incluindo o horário de última
-   sincronização no rodapé.
-
-## Estrutura da planilha (aba "Geral")
-
-| Coluna | Campo                                    |
-|--------|-------------------------------------------|
-| A      | Ano                                        |
-| B      | Mês                                        |
-| C…N    | Categorias financeiras (somadas no total)  |
-
-O parser lê o cabeçalho dinamicamente — novas colunas financeiras (D em diante)
-são automaticamente incluídas no total do mês, sem alterar código. Os nomes de
-colunas usados pelos cards ("NUBANK", "BRADESCO") ficam centralizados em
-`CONFIG.CARD_COLUMNS` (`js/config.js`).
-
-## Como configurar a URL da planilha
-
-1. Publique a planilha em **Arquivo → Compartilhar → Publicar na web**,
-   selecionando a aba "Geral" e o formato CSV.
-2. Copie a URL gerada (formato `.../pub?output=csv&gid=...`).
-3. Atualize `CSV_URL` em `js/config.js`.
-
-## Como testar localmente
-
-Módulos ES6 exigem um servidor HTTP (não funcionam com `file://`). Qualquer
-servidor estático resolve, por exemplo:
+Pré-requisitos: [Node.js](https://nodejs.org) 18+ e uma conta [Cloudflare](https://dash.cloudflare.com/sign-up) (gratuita).
 
 ```bash
-# Python 3
-python3 -m http.server 8080
-
-# ou Node (sem instalar nada globalmente)
-npx serve .
+cd worker
+npm install
 ```
 
-Acesse `http://localhost:8080`.
+## Como configurar o Cloudflare D1
+
+1. Autentique a CLI (abre o navegador):
+   ```bash
+   cd worker
+   npx wrangler login
+   ```
+2. Crie o banco:
+   ```bash
+   npx wrangler d1 create financeiro-db
+   ```
+   O comando retorna um `database_id`. Copie-o para `worker/wrangler.toml`,
+   substituindo `COLE_AQUI_O_DATABASE_ID`.
+3. Aplique o schema (tabelas, índices, triggers e os tipos de despesa padrão):
+   ```bash
+   npx wrangler d1 migrations apply financeiro-db --remote
+   ```
+   Para testar localmente antes de publicar, use `--local` no lugar de `--remote`
+   (roda um SQLite local via Miniflare, sem tocar no banco de produção).
+
+## Como configurar o Worker (API)
+
+1. Defina a chave de API que o frontend usará para autenticar (escolha um
+   valor aleatório forte):
+   ```bash
+   npx wrangler secret put API_KEY
+   ```
+2. Revise `worker/wrangler.toml` — o campo `ALLOWED_ORIGIN` deve ser exatamente
+   a URL do seu GitHub Pages (ex.: `https://SEU_USUARIO.github.io`), usada para
+   restringir o CORS.
+3. Publique o Worker:
+   ```bash
+   npx wrangler deploy
+   ```
+   O comando imprime a URL pública, algo como
+   `https://financeiro-api.SEU_SUBDOMINIO.workers.dev`.
+
+### Documentação da API
+
+Ver [`worker/API.md`](worker/API.md) para a lista completa de endpoints, payloads e códigos de erro.
+
+## Como alterar a URL da API
+
+Edite as duas constantes no topo de [`js/api.js`](js/api.js):
+
+```js
+export const API_BASE_URL = 'https://financeiro-api.SEU_SUBDOMINIO.workers.dev';
+const API_KEY = 'SUA_API_KEY_AQUI'; // o mesmo valor definido com `wrangler secret put API_KEY`
+```
+
+> A API Key fica visível no código-fonte do frontend (é inevitável em um site
+> estático hospedado no GitHub Pages). Para um sistema de uso doméstico e
+> pessoal, uma chave fixa é uma proteção razoável contra acesso casual — não
+> use este padrão para dados sensíveis de terceiros.
+
+## Como executar localmente
+
+**Backend** (API + banco D1 local, em um terminal):
+```bash
+cd worker
+npx wrangler d1 migrations apply financeiro-db --local
+npx wrangler dev
+```
+Isso sobe a API em `http://localhost:8787`. Crie `worker/.dev.vars` com:
+```
+API_KEY=uma-chave-qualquer-para-testes
+```
+
+**Frontend** (em outro terminal, a partir da raiz do projeto):
+```bash
+python3 -m http.server 8080
+# ou: npx serve .
+```
+Acesse `http://localhost:8080/index.html`. Aponte temporariamente
+`API_BASE_URL`/`API_KEY` em `js/api.js` para `http://localhost:8787` e a chave
+de `.dev.vars` — **lembre-se de reverter para os valores de produção antes de
+publicar**.
 
 ## Como publicar no GitHub Pages
 
-1. Crie um repositório no GitHub e envie todos os arquivos deste projeto.
-2. Em **Settings → Pages**, selecione a branch principal e a pasta raiz (`/`).
-3. Aguarde a publicação; a URL será algo como
-   `https://<usuario>.github.io/<repositorio>/`.
+1. Crie um repositório no GitHub (ex.: `financeiro`) e envie o projeto:
+   ```bash
+   git init
+   git add .
+   git commit -m "Initial commit"
+   git branch -M main
+   git remote add origin https://github.com/SEU_USUARIO/financeiro.git
+   git push -u origin main
+   ```
+2. No GitHub: **Settings → Pages → Source → Deploy from a branch**, selecione
+   a branch `main` e a pasta `/ (root)`.
+3. O site fica disponível em `https://SEU_USUARIO.github.io/financeiro/`.
+4. Confirme que `worker/wrangler.toml` → `ALLOWED_ORIGIN` está com essa mesma
+   origem (`https://SEU_USUARIO.github.io`, sem o caminho `/financeiro/`) e
+   rode `npx wrangler deploy` novamente se precisar ajustar.
 
-## Como atualizar a aplicação futuramente
+## Como fazer deploy de uma atualização
 
-- Novas colunas financeiras na planilha entram automaticamente no total do
-  mês — nenhuma alteração de código é necessária.
-- Novos cards: adicione a lógica de cálculo em `cards.js` e o HTML/CSS
-  correspondente em `index.html`/`style.css`.
-- Novos gráficos: crie uma função dedicada em `charts.js` e chame-a a partir
-  de `app.js`.
-- Mudança de fonte de dados: apenas `CSV_URL` em `config.js` precisa mudar.
+- **Frontend:** `git push` para `main` — o GitHub Pages republica automaticamente.
+- **Backend:** `cd worker && npx wrangler deploy`.
+- **Mudanças no banco:** crie uma nova migration em `worker/migrations/`
+  (ex.: `0002_algo.sql`) e rode
+  `npx wrangler d1 migrations apply financeiro-db --remote`. Nunca edite
+  `0001_init.sql` depois de já ter rodado em produção.
 
-## Melhorias recomendadas (evoluções futuras)
+## Regras de negócio implementadas
 
-- Comparativo entre anos (múltiplas séries no mesmo gráfico).
-- Indicadores de variação percentual mês a mês.
-- Filtro por categoria/centro de custo.
-- Exportação para PDF/Excel.
-- Modo escuro (os tokens de cor em `style.css` já estão centralizados em
-  `:root`, facilitando a criação de um tema alternativo).
-- Transformar em PWA (manifest + service worker) para uso offline.
+- Uma fatura de cartão por (cartão, ano, mês); ao repetir o mês, a interface
+  mostra o último valor registrado com as opções **Atualizar valor** /
+  **Manter lançamento anterior**.
+- Vale-transporte calculado em tempo real (dias × valor diário).
+- Despesas fixas podem ser lançadas em vários meses de uma vez, com o mesmo valor.
+- Adiantamentos usam o mesmo formato de lançamento em lote (ano + meses) e
+  **não entram nos totais do Dashboard** — servem só para controle de desconto
+  em folha/e-social.
+- Todo lançamento passa por um modal de confirmação com o resumo antes de gravar.
+- Todas as tabelas de lançamento têm `created_at`/`updated_at` e alimentam um
+  `audit_log` automático via triggers SQL.
+- Valores nunca negativos (`CHECK` no banco + validação na API + validação no frontend).
 
-## Checklist final de validação
+## Checklist de validação
 
-- [x] Leitura do CSV publicado via Fetch API, sem bibliotecas externas.
-- [x] Parser CSV em JavaScript puro, com suporte a campos entre aspas.
-- [x] Gráfico de barras horizontais com Google Charts, moeda em pt-BR.
-- [x] Card "Total Cartões (Próximo mês)" com detecção automática do mês.
-- [x] Card "Nubank + Bradesco" com colunas centralizadas em config.js.
-- [x] Filtro por ano sem recarregar a página.
-- [x] Botão "Atualizar Dados" com nova busca e atualização do rodapé.
-- [x] Estados de loading, erro e vazio implementados.
-- [x] Layout responsivo (desktop, tablet, smartphone).
-- [x] Nenhuma variável global; código modularizado em ES6 modules.
+- [x] Arquitetura desacoplada (frontend estático + API + banco), documentada na Etapa 1
+- [x] Banco D1 com tabelas normalizadas, PKs, FKs, `CHECK`, índices e triggers de auditoria (`worker/migrations/0001_init.sql`)
+- [x] API REST completa em Cloudflare Workers com autenticação por API Key e CORS (`worker/src/`, documentada em `worker/API.md`)
+- [x] Interface de cadastro: cartões (Bradesco/Nubank), funcionária + VT automático, controle de adiantamentos, despesas fixas com tipos dinâmicos
+- [x] Fluxo de conflito (atualizar/manter) e modal de confirmação antes de todo lançamento
+- [x] Dashboard com os 2 cards, gráfico de barras Jan-Dez (Chart.js), filtro por ano, última atualização
+- [x] Testado de ponta a ponta: API real (`wrangler dev` + D1 local, 23 testes) e interface real em navegador (Chrome headless, 21 testes) — 3 bugs encontrados nesse processo e corrigidos (auditoria duplicada, modal travando, select de ano resetando)
+- [x] `wrangler.toml`, migrations e `.gitignore` prontos para deploy
+- [x] README com instalação, configuração do D1/Workers e publicação no GitHub Pages
+
+## Licença
+
+Uso pessoal/doméstico.

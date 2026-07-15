@@ -1,103 +1,305 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard Financeiro</title>
-  <meta name="description" content="Dashboard financeiro pessoal alimentado por planilha Google, 100% front-end." />
-
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet" />
-
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="css/responsive.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cadastro de Despesas | Financeiro</title>
+<link rel="icon" href="data:,">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="css/style.css" rel="stylesheet">
 </head>
 <body>
-  <div class="app">
-    <header class="app-header">
-      <div class="app-header__title">
-        <span class="material-symbols-outlined app-header__icon" aria-hidden="true">account_balance_wallet</span>
-        <h1>Dashboard Financeiro</h1>
-      </div>
 
-      <div class="app-header__actions">
-        <label class="year-filter" for="year-select">
-          <span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>
-          <select id="year-select" aria-label="Filtrar por ano"></select>
-        </label>
+<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top">
+  <div class="container-fluid px-4">
+    <a class="navbar-brand fw-bold" href="index.html"><i class="bi bi-wallet2 me-2"></i>Financeiro</a>
+    <div class="d-flex gap-2">
+      <a href="index.html" class="btn btn-primary btn-sm"><i class="bi bi-pencil-square me-1"></i>Cadastro</a>
+      <a href="dashboard.html" class="btn btn-outline-primary btn-sm"><i class="bi bi-bar-chart-line me-1"></i>Dashboard</a>
+    </div>
+  </div>
+</nav>
 
-        <button id="refresh-button" class="btn-refresh" type="button">
-          <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
-          <span>Atualizar Dados</span>
-        </button>
-      </div>
-    </header>
+<main class="container-fluid px-4 py-4">
 
-    <main class="app-main">
-      <!-- Estado: carregando -->
-      <section id="state-loading" class="state state-loading" aria-live="polite">
-        <div class="spinner" role="status" aria-label="Carregando dados"></div>
-        <p>Carregando dados da planilha...</p>
-      </section>
-
-      <!-- Estado: erro -->
-      <section id="state-error" class="state state-error" hidden aria-live="assertive">
-        <span class="material-symbols-outlined state-error__icon" aria-hidden="true">error</span>
-        <h2>Não foi possível carregar o dashboard</h2>
-        <p id="error-message">Ocorreu um erro inesperado.</p>
-        <button id="retry-button" class="btn-retry" type="button" onclick="document.getElementById('refresh-button').click()">
-          Tentar novamente
-        </button>
-      </section>
-
-      <!-- Estado: vazio -->
-      <section id="state-empty" class="state state-empty" hidden>
-        <span class="material-symbols-outlined state-empty__icon" aria-hidden="true">inbox</span>
-        <h2>Nenhum registro encontrado</h2>
-        <p>A planilha foi carregada, mas ainda não possui dados na aba "Geral".</p>
-      </section>
-
-      <!-- Conteúdo principal do dashboard -->
-      <section id="dashboard-content" class="dashboard" hidden>
-        <div class="cards-grid">
-          <article class="card" aria-labelledby="card-total-cartoes-label">
-            <div class="card__icon card__icon--primary" aria-hidden="true">
-              <span class="material-symbols-outlined">credit_card</span>
-            </div>
-            <div class="card__body">
-              <p id="card-total-cartoes-label" class="card__label">Total Cartões (Próximo mês)</p>
-              <p id="card-total-cartoes-value" class="card__value">R$ 0,00</p>
-              <p id="card-total-cartoes-month" class="card__meta">—</p>
-            </div>
-          </article>
-
-          <article class="card" aria-labelledby="card-outras-despesas-label">
-            <div class="card__icon card__icon--secondary" aria-hidden="true">
-              <span class="material-symbols-outlined">account_balance</span>
-            </div>
-            <div class="card__body">
-              <p id="card-outras-despesas-label" class="card__label">Outras Despesas (Próximo mês)</p>
-              <p id="card-outras-despesas-value" class="card__value">R$ 0,00</p>
-              <p id="card-outras-despesas-month" class="card__meta">—</p>
-            </div>
-          </article>
-        </div>
-
-        <section class="chart-panel">
-          <h2 class="chart-panel__title">Totais Mensais</h2>
-          <div id="main-chart" class="chart-panel__chart" role="img" aria-label="Gráfico de barras com o total financeiro de cada mês"></div>
-        </section>
-      </section>
-    </main>
-
-    <footer class="app-footer">
-      <p>Última atualização: <time id="last-sync-time">—</time></p>
-    </footer>
+  <div class="mb-4">
+    <h1 class="h3 mb-1">Cadastro de Despesas</h1>
+    <p class="text-secondary mb-0">Registre lançamentos para alimentar automaticamente o Dashboard Financeiro.</p>
   </div>
 
-  <script src="https://www.gstatic.com/charts/loader.js"></script>
-  <script type="module" src="js/app.js"></script>
+  <!-- ==================== SESSÃO 1 — CARTÕES DE CRÉDITO ==================== -->
+  <section class="card shadow-sm mb-4">
+    <div class="card-header bg-white">
+      <h2 class="h5 mb-1"><i class="bi bi-credit-card-2-front text-primary me-2"></i>Cartões de Crédito</h2>
+      <p class="text-secondary small mb-0">Registre o valor da fatura de cada cartão por mês. Valores parciais antes do fechamento podem ser atualizados.</p>
+    </div>
+    <div class="card-body">
+      <div class="row g-4">
+        <div class="col-md-6">
+          <div class="border rounded-3 p-3 h-100" data-card-block="bradesco">
+            <h3 class="h6 mb-3"><i class="bi bi-bank2 me-2"></i>Bradesco</h3>
+            <form data-form="credit-card" data-card-name="bradesco" novalidate>
+              <div class="row g-2 mb-2">
+                <div class="col-6">
+                  <label class="form-label small">Ano</label>
+                  <select class="form-select" data-field="year" required></select>
+                </div>
+                <div class="col-6">
+                  <label class="form-label small">Mês</label>
+                  <select class="form-select" data-field="month" required></select>
+                </div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label small">Valor da fatura</label>
+                <div class="input-group">
+                  <span class="input-group-text">R$</span>
+                  <input type="text" class="form-control" data-field="value" placeholder="0,00" inputmode="decimal" required>
+                </div>
+              </div>
+              <div class="alert alert-warning py-2 px-3 small d-none" data-conflict-box></div>
+              <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save me-1"></i>Salvar</button>
+            </form>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="border rounded-3 p-3 h-100" data-card-block="nubank">
+            <h3 class="h6 mb-3"><i class="bi bi-credit-card me-2"></i>Nubank</h3>
+            <form data-form="credit-card" data-card-name="nubank" novalidate>
+              <div class="row g-2 mb-2">
+                <div class="col-6">
+                  <label class="form-label small">Ano</label>
+                  <select class="form-select" data-field="year" required></select>
+                </div>
+                <div class="col-6">
+                  <label class="form-label small">Mês</label>
+                  <select class="form-select" data-field="month" required></select>
+                </div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label small">Valor da fatura</label>
+                <div class="input-group">
+                  <span class="input-group-text">R$</span>
+                  <input type="text" class="form-control" data-field="value" placeholder="0,00" inputmode="decimal" required>
+                </div>
+              </div>
+              <div class="alert alert-warning py-2 px-3 small d-none" data-conflict-box></div>
+              <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save me-1"></i>Salvar</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== SESSÃO 2 — FUNCIONÁRIA ==================== -->
+  <section class="card shadow-sm mb-4">
+    <div class="card-header bg-white">
+      <h2 class="h5 mb-1"><i class="bi bi-person-badge text-primary me-2"></i>Funcionária</h2>
+      <p class="text-secondary small mb-0">Vale-transporte, férias, décimo terceiro, desconto de adiantamento e guia e-social.</p>
+    </div>
+    <div class="card-body">
+      <form data-form="employee" novalidate>
+        <div class="row g-3 mb-3">
+          <div class="col-md-3 col-6">
+            <label class="form-label small">Ano</label>
+            <select class="form-select" data-field="year" required></select>
+          </div>
+          <div class="col-md-3 col-6">
+            <label class="form-label small">Mês</label>
+            <select class="form-select" data-field="month" required></select>
+          </div>
+          <div class="col-md-3 col-6">
+            <label class="form-label small">Dias trabalhados</label>
+            <input type="number" min="0" class="form-control" data-field="days_worked" required>
+          </div>
+          <div class="col-md-3 col-6">
+            <label class="form-label small">Valor diário transporte (ida+volta)</label>
+            <div class="input-group">
+              <span class="input-group-text">R$</span>
+              <input type="text" class="form-control" data-field="daily_transport_value" placeholder="0,00" inputmode="decimal" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-primary d-flex justify-content-between align-items-center py-2 px-3 mb-3">
+          <span><i class="bi bi-bus-front me-2"></i>Vale Transporte calculado</span>
+          <strong data-computed="transport_value">R$ 0,00</strong>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-3 col-6">
+            <label class="form-label small">Férias <span class="text-secondary">(opcional)</span></label>
+            <div class="input-group">
+              <span class="input-group-text">R$</span>
+              <input type="text" class="form-control" data-field="vacation_value" placeholder="0,00" inputmode="decimal">
+            </div>
+          </div>
+          <div class="col-md-3 col-6">
+            <label class="form-label small">Décimo Terceiro <span class="text-secondary">(opcional)</span></label>
+            <div class="input-group">
+              <span class="input-group-text">R$</span>
+              <input type="text" class="form-control" data-field="thirteenth_value" placeholder="0,00" inputmode="decimal">
+            </div>
+          </div>
+          <div class="col-md-3 col-6">
+            <label class="form-label small">Desconto por Adiantamento <span class="text-secondary">(opcional)</span></label>
+            <div class="input-group">
+              <span class="input-group-text">R$</span>
+              <input type="text" class="form-control" data-field="advance_discount_value" placeholder="0,00" inputmode="decimal">
+            </div>
+          </div>
+          <div class="col-md-3 col-6">
+            <label class="form-label small">Qtd. meses para desconto</label>
+            <input type="number" min="0" class="form-control" data-field="advance_discount_months" placeholder="0">
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <label class="form-label small">Guia E-social (valor total)</label>
+            <div class="input-group">
+              <span class="input-group-text">R$</span>
+              <input type="text" class="form-control" data-field="esocial_value" placeholder="0,00" inputmode="decimal">
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-warning py-2 px-3 small d-none" data-conflict-box></div>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Salvar Lançamento</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ==================== CONTROLE DE ADIANTAMENTOS ==================== -->
+  <section class="card shadow-sm mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <h2 class="h5 mb-1"><i class="bi bi-cash-coin text-primary me-2"></i>Controle de Adiantamentos</h2>
+        <p class="text-secondary small mb-0">
+          Cronograma de desconto de adiantamento em folha. Uso exclusivo para controle do e-social —
+          estes valores <strong>não</strong> são contabilizados nos totais do Dashboard.
+        </p>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <label class="form-label small mb-0">Ano</label>
+        <select class="form-select form-select-sm" style="width:auto" data-field="advances-filter-year"></select>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="row g-3 mb-4">
+        <div class="col-md-4">
+          <div class="p-3 bg-light rounded-3 text-center">
+            <div class="text-secondary small">Total emprestado no ano</div>
+            <div class="h4 mb-0" data-summary="total_borrowed">R$ 0,00</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="p-3 bg-light rounded-3 text-center">
+            <div class="text-secondary small">Total descontado</div>
+            <div class="h4 mb-0" data-summary="total_discounted">R$ 0,00</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="p-3 bg-light rounded-3 text-center">
+            <div class="text-secondary small">Saldo restante</div>
+            <div class="h4 mb-0" data-summary="total_remaining">R$ 0,00</div>
+          </div>
+        </div>
+      </div>
+
+      <form data-form="advance" novalidate>
+        <div class="row g-3 mb-3">
+          <div class="col-md-3 col-6">
+            <label class="form-label small">Valor do desconto (por mês)</label>
+            <div class="input-group">
+              <span class="input-group-text">R$</span>
+              <input type="text" class="form-control" data-field="value" placeholder="0,00" inputmode="decimal" required>
+            </div>
+          </div>
+          <div class="col-md-2 col-6">
+            <label class="form-label small">Ano</label>
+            <select class="form-select" data-field="year" required></select>
+          </div>
+        </div>
+
+        <label class="form-label small d-block">Meses do desconto</label>
+        <div class="d-flex flex-wrap gap-2 mb-3" data-months-checkboxes></div>
+
+        <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Cadastrar</button>
+      </form>
+
+      <hr class="my-4">
+
+      <h3 class="h6 mb-3"><i class="bi bi-list-check me-2"></i>Relatório de descontos por mês</h3>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Mês/Ano</th>
+              <th>Valor do desconto</th>
+              <th>Status</th>
+              <th class="text-end">Ações</th>
+            </tr>
+          </thead>
+          <tbody data-table="advances-list">
+            <tr><td colspan="4" class="text-center text-secondary py-4">Nenhum desconto cadastrado.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== SESSÃO 3 — DESPESAS FIXAS ==================== -->
+  <section class="card shadow-sm mb-4">
+    <div class="card-header bg-white">
+      <h2 class="h5 mb-1"><i class="bi bi-receipt text-primary me-2"></i>Despesas Fixas</h2>
+      <p class="text-secondary small mb-0">Cadastre despesas recorrentes, podendo selecionar vários meses de uma vez.</p>
+    </div>
+    <div class="card-body">
+      <form data-form="fixed-expense" novalidate>
+        <div class="row g-3 mb-3">
+          <div class="col-md-5">
+            <label class="form-label small">Tipo da despesa</label>
+            <div class="input-group">
+              <select class="form-select" data-field="expense_type_id" required></select>
+              <button type="button" class="btn btn-outline-primary" data-action="new-expense-type">
+                <i class="bi bi-plus-lg me-1"></i>Nova despesa
+              </button>
+            </div>
+          </div>
+          <div class="col-md-2 col-6">
+            <label class="form-label small">Ano</label>
+            <select class="form-select" data-field="year" required></select>
+          </div>
+          <div class="col-md-3 col-6">
+            <label class="form-label small">Valor</label>
+            <div class="input-group">
+              <span class="input-group-text">R$</span>
+              <input type="text" class="form-control" data-field="value" placeholder="0,00" inputmode="decimal" required>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small">Descrição <span class="text-secondary">(opcional)</span></label>
+            <input type="text" class="form-control" data-field="description" maxlength="120">
+          </div>
+        </div>
+
+        <label class="form-label small d-block">Meses</label>
+        <div class="d-flex flex-wrap gap-2 mb-3" data-months-checkboxes></div>
+
+        <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Salvar Despesa</button>
+      </form>
+    </div>
+  </section>
+
+</main>
+
+<footer class="text-center text-secondary small py-4">
+  Sistema de Previsão de Despesas Pessoais &middot; <a href="dashboard.html">Ir para o Dashboard</a>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="module" src="js/app.js"></script>
 </body>
 </html>

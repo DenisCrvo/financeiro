@@ -1,0 +1,17 @@
+name = "cloudfinanceiro"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+# Após criar o banco com `wrangler d1 create financeiro-db`, cole aqui o
+# database_id retornado pelo comando (ver README, seção "Configurar Cloudflare D1").
+[[d1_databases]]
+binding = "DB"
+database_name = "financeiro-db"
+database_id = "d2124f15-354d-409f-b079-ec6c13f1bb86"
+
+# Restrinja este valor à origem real do GitHub Pages em produção.
+[vars]
+ALLOWED_ORIGIN = "https://deniscrvo.github.io"
+
+# A API_KEY NÃO fica aqui — é definida como secret:
+#   wrangler secret put API_KEY
