@@ -7,7 +7,7 @@ import {
   populateYearSelect, populateMonthSelect, monthName, MONTH_NAMES_PT,
 } from './utils.js';
 import { showToast } from '../components/toast.js';
-import { confirmModal, newExpenseTypeModal } from '../components/modal.js';
+import { confirmModal, newExpenseTypeModal, manageExpenseTypesModal } from '../components/modal.js';
 import {
   calculateTransportValue, validateCreditCardForm, validateEmployeeForm,
   validateFixedExpenseForm, validateAdvanceForm,
@@ -268,6 +268,21 @@ function initFixedExpensesSection() {
     } catch (err) {
       showToast(err.message, 'error');
     }
+  });
+
+  form.querySelector('[data-action="manage-expense-types"]').addEventListener('click', async () => {
+    let types;
+    try {
+      types = await expenseTypesApi.list();
+    } catch (err) {
+      showToast(err.message, 'error');
+      return;
+    }
+    await manageExpenseTypesModal(types, {
+      onRename: (id, name) => expenseTypesApi.update(id, { name }),
+      onDelete: (id) => expenseTypesApi.remove(id),
+    });
+    await loadExpenseTypesIntoSelect(typeSelect);
   });
 
   form.addEventListener('submit', (e) => handleFixedExpenseSubmit(e, form, typeSelect, monthsContainer));

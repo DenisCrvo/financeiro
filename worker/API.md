@@ -49,6 +49,7 @@ entram nos totais do Dashboard.**
 |---|---|---|
 | GET | `/api/expense-types` | Lista tipos cadastrados |
 | POST | `/api/expense-types` | Cria `{name, icon?}`. Retorna 409 se já existir |
+| PUT | `/api/expense-types/:id` | Renomeia `{name, icon?}`. Retorna 409 se o novo nome já existir em outro tipo |
 | DELETE | `/api/expense-types/:id` | Remove (bloqueado se houver despesas fixas associadas) |
 
 ## Despesas Fixas

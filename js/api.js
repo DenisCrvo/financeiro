@@ -79,6 +79,7 @@ export const advancesApi = {
 export const expenseTypesApi = {
   list: () => request('/api/expense-types'),
   create: (data) => request('/api/expense-types', { method: 'POST', body: data }),
+  update: (id, data) => request(`/api/expense-types/${id}`, { method: 'PUT', body: data }),
   remove: (id) => request(`/api/expense-types/${id}`, { method: 'DELETE' }),
 };
 

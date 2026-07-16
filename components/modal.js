@@ -126,3 +126,117 @@ export function newExpenseTypeModal() {
     bsModal.show();
   });
 }
+
+/**
+ * Modal de gerenciamento dos tipos de despesa fixa: renomear ou excluir.
+ * A lógica de API fica a cargo do chamador via callbacks, mantendo este
+ * componente livre de dependências de serviço.
+ * @param {Array<{id:number,name:string}>} types
+ * @param {{onRename: (id:number, name:string) => Promise<any>, onDelete: (id:number) => Promise<any>}} handlers
+ * @returns {Promise<void>} resolve quando o modal é fechado
+ */
+export function manageExpenseTypesModal(types, { onRename, onDelete }) {
+  return new Promise((resolve) => {
+    let currentTypes = [...types];
+
+    const el = createModalElement(`
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bi bi-sliders me-2"></i>Gerenciar tipos de despesa</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <ul class="list-group" data-types-list></ul>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-action="close">Fechar</button>
+          </div>
+        </div>
+      </div>
+    `);
+
+    const listEl = el.querySelector('[data-types-list]');
+
+    function renderRow(type) {
+      const li = document.createElement('li');
+      li.className = 'list-group-item';
+      li.dataset.id = String(type.id);
+      li.innerHTML = `
+        <div class="d-flex align-items-center gap-2">
+          <input type="text" class="form-control form-control-sm" value="${type.name.replace(/"/g, '&quot;')}" maxlength="60">
+          <button type="button" class="btn btn-sm btn-outline-primary" data-row-action="save" title="Salvar">
+            <i class="bi bi-check-lg"></i>
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-danger" data-row-action="delete" title="Excluir">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+        <div class="invalid-feedback d-block small mt-1" data-row-error style="display:none !important;"></div>
+      `;
+
+      const input = li.querySelector('input');
+      const errorEl = li.querySelector('[data-row-error]');
+
+      function showError(message) {
+        errorEl.textContent = message;
+        errorEl.style.setProperty('display', 'block', 'important');
+      }
+      function clearError() {
+        errorEl.style.setProperty('display', 'none', 'important');
+      }
+
+      li.querySelector('[data-row-action="save"]').addEventListener('click', async () => {
+        const name = input.value.trim();
+        if (!name) { showError('O nome não pode ser vazio.'); return; }
+        if (name === type.name) { clearError(); return; }
+        try {
+          await onRename(type.id, name);
+          type.name = name;
+          clearError();
+        } catch (err) {
+          showError(err.message);
+        }
+      });
+
+      li.querySelector('[data-row-action="delete"]').addEventListener('click', async () => {
+        if (!confirm(`Excluir o tipo de despesa "${type.name}"?`)) return;
+        try {
+          await onDelete(type.id);
+          currentTypes = currentTypes.filter((t) => t.id !== type.id);
+          li.remove();
+        } catch (err) {
+          showError(err.message);
+        }
+      });
+
+      return li;
+    }
+
+    function renderList() {
+      listEl.innerHTML = '';
+      if (currentTypes.length === 0) {
+        listEl.innerHTML = '<li class="list-group-item text-secondary text-center">Nenhum tipo cadastrado.</li>';
+        return;
+      }
+      currentTypes.forEach((type) => listEl.appendChild(renderRow(type)));
+    }
+
+    renderList();
+
+    const bsModal = new bootstrap.Modal(el);
+    let resolved = false;
+    const finish = () => {
+      if (resolved) return;
+      resolved = true;
+      resolve();
+      hideModal(bsModal, el);
+    };
+
+    el.querySelector('[data-action="close"]').addEventListener('click', () => finish());
+    el.addEventListener('hidden.bs.modal', () => { finish(); el.remove(); });
+    markModalAsShown(el);
+
+    bsModal.show();
+  });
+}

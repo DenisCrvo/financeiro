@@ -29,6 +29,28 @@ export async function createExpenseType(request, env) {
   return jsonResponse(created, 201);
 }
 
+export async function updateExpenseType(request, env, id) {
+  const body = await parseJsonBody(request);
+  requireFields(body, ['name']);
+  const name = String(body.name).trim();
+  if (!name) throw new HttpError('O campo "name" não pode ser vazio.', 422);
+
+  const existing = await env.DB.prepare('SELECT * FROM expense_types WHERE id = ?').bind(id).first();
+  if (!existing) return errorResponse('Registro não encontrado.', 404);
+
+  const duplicate = await env.DB.prepare('SELECT id FROM expense_types WHERE name = ? AND id != ?')
+    .bind(name, id).first();
+  if (duplicate) {
+    return jsonResponse({ error: 'Já existe um tipo de despesa com esse nome.' }, 409);
+  }
+
+  await env.DB.prepare('UPDATE expense_types SET name = ?, icon = ? WHERE id = ?')
+    .bind(name, body.icon ?? existing.icon, id).run();
+
+  const updated = await env.DB.prepare('SELECT * FROM expense_types WHERE id = ?').bind(id).first();
+  return jsonResponse(updated);
+}
+
 export async function deleteExpenseType(request, env, id) {
   const existing = await env.DB.prepare('SELECT * FROM expense_types WHERE id = ?').bind(id).first();
   if (!existing) return errorResponse('Registro não encontrado.', 404);
