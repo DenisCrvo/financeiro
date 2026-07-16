@@ -73,6 +73,12 @@ export async function createEmployeeMonthly(request, env) {
   return jsonResponse(created, 201);
 }
 
+export async function getEmployeeMonthly(request, env, id) {
+  const record = await env.DB.prepare('SELECT * FROM employee_monthly WHERE id = ?').bind(id).first();
+  if (!record) return errorResponse('Registro não encontrado.', 404);
+  return jsonResponse(record);
+}
+
 export async function updateEmployeeMonthly(request, env, id) {
   const body = await parseJsonBody(request);
   const existing = await env.DB.prepare('SELECT * FROM employee_monthly WHERE id = ?').bind(id).first();

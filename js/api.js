@@ -53,6 +53,7 @@ export { ApiError };
 export const creditCardsApi = {
   list: (year) => request(`/api/credit-cards${qs({ year })}`),
   check: (cardName, year, month) => request(`/api/credit-cards/check${qs({ card_name: cardName, year, month })}`),
+  getById: (id) => request(`/api/credit-cards/${id}`),
   create: (data) => request('/api/credit-cards', { method: 'POST', body: data }),
   update: (id, data) => request(`/api/credit-cards/${id}`, { method: 'PUT', body: data }),
   remove: (id) => request(`/api/credit-cards/${id}`, { method: 'DELETE' }),
@@ -61,6 +62,7 @@ export const creditCardsApi = {
 export const employeeApi = {
   list: (year) => request(`/api/employee${qs({ year })}`),
   check: (year, month) => request(`/api/employee/check${qs({ year, month })}`),
+  getById: (id) => request(`/api/employee/${id}`),
   create: (data) => request('/api/employee', { method: 'POST', body: data }),
   update: (id, data) => request(`/api/employee/${id}`, { method: 'PUT', body: data }),
   remove: (id) => request(`/api/employee/${id}`, { method: 'DELETE' }),
@@ -71,6 +73,7 @@ export const employeeApi = {
 export const advancesApi = {
   list: (year) => request(`/api/advances${qs({ year })}`),
   summary: (year) => request(`/api/advances/summary${qs({ year })}`),
+  getById: (id) => request(`/api/advances/${id}`),
   create: (data) => request('/api/advances', { method: 'POST', body: data }),
   update: (id, data) => request(`/api/advances/${id}`, { method: 'PUT', body: data }),
   remove: (id) => request(`/api/advances/${id}`, { method: 'DELETE' }),
@@ -85,6 +88,7 @@ export const expenseTypesApi = {
 
 export const fixedExpensesApi = {
   list: (year) => request(`/api/fixed-expenses${qs({ year })}`),
+  getById: (id) => request(`/api/fixed-expenses/${id}`),
   create: (data) => request('/api/fixed-expenses', { method: 'POST', body: data }),
   update: (id, data) => request(`/api/fixed-expenses/${id}`, { method: 'PUT', body: data }),
   remove: (id) => request(`/api/fixed-expenses/${id}`, { method: 'DELETE' }),
@@ -96,5 +100,6 @@ export const dashboardApi = {
 };
 
 export const auditLogApi = {
-  list: ({ table, operation, year, limit } = {}) => request(`/api/audit-log${qs({ table, operation, year, limit })}`),
+  list: ({ table, operation, year, month, limit } = {}) =>
+    request(`/api/audit-log${qs({ table, operation, year, month, limit })}`),
 };

@@ -74,6 +74,16 @@ export async function createFixedExpenses(request, env) {
   return jsonResponse(results, 201);
 }
 
+export async function getFixedExpense(request, env, id) {
+  const record = await env.DB.prepare(
+    `SELECT fe.*, et.name AS expense_type_name, et.icon AS expense_type_icon
+     FROM fixed_expenses fe JOIN expense_types et ON et.id = fe.expense_type_id
+     WHERE fe.id = ?`
+  ).bind(id).first();
+  if (!record) return errorResponse('Registro não encontrado.', 404);
+  return jsonResponse(record);
+}
+
 export async function updateFixedExpense(request, env, id) {
   const body = await parseJsonBody(request);
   requireFields(body, ['value']);

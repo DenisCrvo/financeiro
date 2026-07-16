@@ -61,3 +61,14 @@ body {
     height: 280px;
   }
 }
+
+.history-table-scroll {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.history-table-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}

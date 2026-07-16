@@ -1,8 +1,15 @@
 // Orquestração do Dashboard Financeiro (dashboard.html).
 
-import { dashboardApi, auditLogApi } from './api.js';
-import { formatCurrencyBRL, populateYearSelect, formatDateTimeBR, monthName } from './utils.js';
+import {
+  dashboardApi, auditLogApi, creditCardsApi, employeeApi, advancesApi, fixedExpensesApi,
+} from './api.js';
+import {
+  formatCurrencyBRL, populateYearSelect, formatDateTimeBR, monthName,
+  attachCurrencyMask, getCurrencyInputValue, MONTH_NAMES_PT,
+} from './utils.js';
 import { showToast } from '../components/toast.js';
+import { editRecordModal } from '../components/modal.js';
+import { calculateTransportValue } from '../services/financeiroService.js';
 
 const CHART_COLOR = '#2a78d6';
 const GRID_COLOR = '#e1e0d9';
@@ -211,6 +218,21 @@ function formatAuditRecord(record) {
   return parts.join(' · ') || '—';
 }
 
+const TABLE_API = {
+  credit_cards: creditCardsApi,
+  employee_monthly: employeeApi,
+  employee_advances: advancesApi,
+  fixed_expenses: fixedExpensesApi,
+};
+
+function extractPrimaryValue(record) {
+  const data = record.new_value ? JSON.parse(record.new_value) : (record.old_value ? JSON.parse(record.old_value) : {});
+  for (const field of ['value', 'discount_value', 'transport_value']) {
+    if (typeof data[field] === 'number') return data[field];
+  }
+  return null;
+}
+
 function initHistorySection() {
   const yearSelect = document.querySelector('[data-history-filter="year"]');
   if (!yearSelect) return;
@@ -223,8 +245,27 @@ function initHistorySection() {
     yearSelect.appendChild(opt);
   }
 
+  const monthSelect = document.querySelector('[data-history-filter="month"]');
+  MONTH_NAMES_PT.forEach((name, index) => {
+    const opt = document.createElement('option');
+    opt.value = String(index + 1);
+    opt.textContent = name;
+    monthSelect.appendChild(opt);
+  });
+
+  const minValueInput = document.querySelector('[data-history-filter="min-value"]');
+  attachCurrencyMask(minValueInput);
+
   document.querySelectorAll('[data-history-filter]').forEach((el) => {
-    el.addEventListener('change', loadHistory);
+    el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', loadHistory);
+  });
+
+  document.querySelector('[data-table="history-list"]').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-history-action]');
+    if (!btn) return;
+    const { historyAction, tableName, recordId } = btn.dataset;
+    if (historyAction === 'edit') handleEditRecord(tableName, Number(recordId));
+    if (historyAction === 'delete') handleDeleteRecord(tableName, Number(recordId));
   });
 
   loadHistory();
@@ -237,12 +278,22 @@ async function loadHistory() {
     table: document.querySelector('[data-history-filter="table"]').value || undefined,
     operation: document.querySelector('[data-history-filter="operation"]').value || undefined,
     year: document.querySelector('[data-history-filter="year"]').value || undefined,
+    month: document.querySelector('[data-history-filter="month"]').value || undefined,
   };
+  const minValue = getCurrencyInputValue(document.querySelector('[data-history-filter="min-value"]'));
 
   try {
-    const records = await auditLogApi.list(filters);
+    let records = await auditLogApi.list(filters);
+    const totalFetched = records.length;
+    if (minValue > 0) {
+      records = records.filter((r) => {
+        const v = extractPrimaryValue(r);
+        return v !== null && v >= minValue;
+      });
+    }
+
     if (records.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" class="text-center text-secondary py-4">Nenhum lançamento encontrado para os filtros selecionados.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-secondary py-4">Nenhum lançamento encontrado para os filtros selecionados.</td></tr>';
       infoEl.textContent = '';
       return;
     }
@@ -252,12 +303,126 @@ async function loadHistory() {
         <td>${TABLE_LABELS[record.table_name] ?? record.table_name}</td>
         <td><span class="badge ${OPERATION_BADGE[record.operation] ?? 'text-bg-secondary'}">${OPERATION_LABELS[record.operation] ?? record.operation}</span></td>
         <td class="small">${formatAuditRecord(record)}</td>
+        <td class="text-end text-nowrap">${renderRowActions(record)}</td>
       </tr>
     `).join('');
-    infoEl.textContent = `${records.length} registro(s) exibido(s)${records.length >= 200 ? ' (limite de 200 atingido — refine os filtros)' : ''}.`;
+    infoEl.textContent = `${records.length} registro(s) exibido(s)${totalFetched >= 200 ? ' (limite de 200 buscados — refine os filtros)' : ''}.`;
   } catch (err) {
     showToast(err.message, 'error');
-    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger py-4">Erro ao carregar o histórico.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4">Erro ao carregar o histórico.</td></tr>';
+  }
+}
+
+function renderRowActions(record) {
+  if (record.operation === 'DELETE') return '<span class="text-secondary">—</span>';
+  return `
+    <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-history-action="edit"
+            data-table-name="${record.table_name}" data-record-id="${record.record_id}" title="Editar">
+      <i class="bi bi-pencil"></i>
+    </button>
+    <button type="button" class="btn btn-sm btn-outline-danger" data-history-action="delete"
+            data-table-name="${record.table_name}" data-record-id="${record.record_id}" title="Excluir">
+      <i class="bi bi-trash"></i>
+    </button>
+  `;
+}
+
+const CARD_LABELS = { bradesco: 'Bradesco', nubank: 'Nubank' };
+
+function buildEditSpec(tableName, record) {
+  switch (tableName) {
+    case 'credit_cards':
+      return {
+        title: 'Editar fatura de cartão',
+        readOnlyRows: [
+          ['Cartão', CARD_LABELS[record.card_name] ?? record.card_name],
+          ['Ano', String(record.year)], ['Mês', monthName(record.month)],
+        ],
+        fields: [{ key: 'value', label: 'Valor da fatura', type: 'currency', value: record.value }],
+      };
+    case 'employee_monthly':
+      return {
+        title: 'Editar lançamento da funcionária',
+        readOnlyRows: [['Ano', String(record.year)], ['Mês', monthName(record.month)]],
+        fields: [
+          { key: 'days_worked', label: 'Dias trabalhados', type: 'number', value: record.days_worked },
+          { key: 'daily_transport_value', label: 'Valor diário transporte', type: 'currency', value: record.daily_transport_value },
+          { key: 'vacation_value', label: 'Férias', type: 'currency', value: record.vacation_value },
+          { key: 'thirteenth_value', label: 'Décimo Terceiro', type: 'currency', value: record.thirteenth_value },
+          { key: 'advance_discount_value', label: 'Desconto Adiantamento', type: 'currency', value: record.advance_discount_value },
+          { key: 'advance_discount_months', label: 'Qtd. meses desconto', type: 'number', value: record.advance_discount_months },
+          { key: 'esocial_value', label: 'Guia E-social', type: 'currency', value: record.esocial_value },
+        ],
+      };
+    case 'employee_advances':
+      return {
+        title: 'Editar parcela de adiantamento',
+        readOnlyRows: [['Ano', String(record.year)], ['Mês', monthName(record.month)]],
+        fields: [{ key: 'discount_value', label: 'Valor do desconto', type: 'currency', value: record.discount_value }],
+      };
+    case 'fixed_expenses':
+      return {
+        title: 'Editar despesa fixa',
+        readOnlyRows: [
+          ['Categoria', record.expense_type_name ?? '—'],
+          ['Ano', String(record.year)], ['Mês', monthName(record.month)],
+        ],
+        fields: [
+          { key: 'value', label: 'Valor', type: 'currency', value: record.value },
+          { key: 'description', label: 'Descrição', type: 'text', value: record.description },
+        ],
+      };
+    default:
+      return null;
+  }
+}
+
+async function handleEditRecord(tableName, recordId) {
+  const api = TABLE_API[tableName];
+  if (!api) return;
+
+  let record;
+  try {
+    record = await api.getById(recordId);
+  } catch (err) {
+    showToast(err.message === 'Registro não encontrado.' ? 'Este lançamento não existe mais.' : err.message, 'error');
+    return;
+  }
+
+  const spec = buildEditSpec(tableName, record);
+  const values = await editRecordModal(spec);
+  if (!values) return;
+
+  const payload = tableName === 'employee_monthly'
+    ? { ...values, transport_value: calculateTransportValue(values.days_worked, values.daily_transport_value) }
+    : values;
+
+  try {
+    await api.update(recordId, payload);
+    showToast('Lançamento atualizado com sucesso.', 'success');
+    await Promise.all([
+      loadDashboard(document.getElementById('dashboard-year-filter').value),
+      loadHistory(),
+    ]);
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function handleDeleteRecord(tableName, recordId) {
+  if (!confirm('Excluir este lançamento? Esta ação não pode ser desfeita.')) return;
+  const api = TABLE_API[tableName];
+  if (!api) return;
+
+  try {
+    await api.remove(recordId);
+    showToast('Lançamento removido com sucesso.', 'success');
+    await Promise.all([
+      loadDashboard(document.getElementById('dashboard-year-filter').value),
+      loadHistory(),
+    ]);
+  } catch (err) {
+    showToast(err.message, 'error');
   }
 }
 

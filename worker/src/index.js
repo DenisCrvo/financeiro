@@ -38,11 +38,11 @@ const STATIC_ROUTES = [
 
 // Rotas com :id — prefixo + handlers por método.
 const ID_ROUTES = [
-  { prefix: '/api/credit-cards/', handlers: { PUT: creditCards.updateCreditCard, DELETE: creditCards.deleteCreditCard } },
-  { prefix: '/api/employee/', handlers: { PUT: employee.updateEmployeeMonthly, DELETE: employee.deleteEmployeeMonthly } },
-  { prefix: '/api/advances/', handlers: { PUT: advances.updateAdvance, DELETE: advances.deleteAdvance } },
+  { prefix: '/api/credit-cards/', handlers: { GET: creditCards.getCreditCard, PUT: creditCards.updateCreditCard, DELETE: creditCards.deleteCreditCard } },
+  { prefix: '/api/employee/', handlers: { GET: employee.getEmployeeMonthly, PUT: employee.updateEmployeeMonthly, DELETE: employee.deleteEmployeeMonthly } },
+  { prefix: '/api/advances/', handlers: { GET: advances.getAdvance, PUT: advances.updateAdvance, DELETE: advances.deleteAdvance } },
   { prefix: '/api/expense-types/', handlers: { PUT: expenseTypes.updateExpenseType, DELETE: expenseTypes.deleteExpenseType } },
-  { prefix: '/api/fixed-expenses/', handlers: { PUT: fixedExpenses.updateFixedExpense, DELETE: fixedExpenses.deleteFixedExpense } },
+  { prefix: '/api/fixed-expenses/', handlers: { GET: fixedExpenses.getFixedExpense, PUT: fixedExpenses.updateFixedExpense, DELETE: fixedExpenses.deleteFixedExpense } },
 ];
 
 function matchStaticRoute(method, pathname) {

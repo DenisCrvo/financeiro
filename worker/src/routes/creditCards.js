@@ -72,6 +72,12 @@ export async function createCreditCard(request, env) {
   return jsonResponse(created, 201);
 }
 
+export async function getCreditCard(request, env, id) {
+  const record = await env.DB.prepare('SELECT * FROM credit_cards WHERE id = ?').bind(id).first();
+  if (!record) return errorResponse('Registro não encontrado.', 404);
+  return jsonResponse(record);
+}
+
 export async function updateCreditCard(request, env, id) {
   const body = await parseJsonBody(request);
   requireFields(body, ['value']);

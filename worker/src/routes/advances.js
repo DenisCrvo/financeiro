@@ -83,6 +83,12 @@ export async function createAdvance(request, env) {
   return jsonResponse(results, 201);
 }
 
+export async function getAdvance(request, env, id) {
+  const record = await env.DB.prepare('SELECT * FROM employee_advances WHERE id = ?').bind(id).first();
+  if (!record) return errorResponse('Registro não encontrado.', 404);
+  return jsonResponse(record);
+}
+
 export async function updateAdvance(request, env, id) {
   const body = await parseJsonBody(request);
   requireFields(body, ['discount_value']);

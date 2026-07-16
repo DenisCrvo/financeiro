@@ -1,5 +1,7 @@
 // Modais reutilizáveis: confirmação de lançamento e cadastro de nova despesa.
 
+import { formatCurrencyBRL, parseCurrencyInput } from '../js/utils.js';
+
 function createModalElement(innerHtml, extraClass = '') {
   const wrapper = document.createElement('div');
   wrapper.className = `modal fade ${extraClass}`;
@@ -235,6 +237,109 @@ export function manageExpenseTypesModal(types, { onRename, onDelete }) {
 
     el.querySelector('[data-action="close"]').addEventListener('click', () => finish());
     el.addEventListener('hidden.bs.modal', () => { finish(); el.remove(); });
+    markModalAsShown(el);
+
+    bsModal.show();
+  });
+}
+
+/**
+ * Modal genérico para editar um lançamento existente (usado no histórico do
+ * Dashboard). Os campos exibidos variam por tipo de tabela — quem decide isso
+ * é o chamador, este componente só sabe renderizar `fields` e devolver os
+ * valores preenchidos.
+ * @param {{
+ *   title: string,
+ *   readOnlyRows?: Array<[string,string]>,
+ *   fields: Array<{key:string, label:string, type:'currency'|'number'|'text', value:any}>,
+ * }} options
+ * @returns {Promise<Object|null>} valores por `key` (currency/number já convertidos), ou null se cancelado
+ */
+export function editRecordModal({ title, readOnlyRows = [], fields }) {
+  return new Promise((resolve) => {
+    const readOnlyHtml = readOnlyRows.map(
+      ([label, value]) => `
+        <div class="d-flex justify-content-between border-bottom py-1 small">
+          <span class="text-secondary">${label}</span>
+          <span>${value}</span>
+        </div>`
+    ).join('');
+
+    const fieldsHtml = fields.map((field) => {
+      if (field.type === 'currency') {
+        return `
+          <div class="mb-2">
+            <label class="form-label small">${field.label}</label>
+            <div class="input-group">
+              <span class="input-group-text">R$</span>
+              <input type="text" class="form-control" data-field-key="${field.key}" data-field-type="currency"
+                     value="${formatCurrencyBRL(field.value).replace('R$', '').trim()}" inputmode="decimal">
+            </div>
+          </div>`;
+      }
+      if (field.type === 'number') {
+        return `
+          <div class="mb-2">
+            <label class="form-label small">${field.label}</label>
+            <input type="number" min="0" class="form-control" data-field-key="${field.key}" data-field-type="number"
+                   value="${field.value ?? 0}">
+          </div>`;
+      }
+      return `
+        <div class="mb-2">
+          <label class="form-label small">${field.label}</label>
+          <input type="text" class="form-control" data-field-key="${field.key}" data-field-type="text"
+                 value="${(field.value ?? '').toString().replace(/"/g, '&quot;')}" maxlength="120">
+        </div>`;
+    }).join('');
+
+    const el = createModalElement(`
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>${title}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            ${readOnlyHtml ? `<div class="mb-3">${readOnlyHtml}</div>` : ''}
+            ${fieldsHtml}
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-action="cancel">Cancelar</button>
+            <button type="button" class="btn btn-primary" data-action="save">Salvar</button>
+          </div>
+        </div>
+      </div>
+    `);
+
+    el.querySelectorAll('input[data-field-type="currency"]').forEach((input) => {
+      input.addEventListener('input', () => {
+        input.value = formatCurrencyBRL(parseCurrencyInput(input.value)).replace('R$', '').trim();
+      });
+    });
+
+    const bsModal = new bootstrap.Modal(el);
+    let resolved = false;
+    const finish = (value) => {
+      if (resolved) return;
+      resolved = true;
+      resolve(value);
+      hideModal(bsModal, el);
+    };
+
+    el.querySelector('[data-action="save"]').addEventListener('click', () => {
+      const values = {};
+      el.querySelectorAll('[data-field-key]').forEach((input) => {
+        const key = input.dataset.fieldKey;
+        const type = input.dataset.fieldType;
+        if (type === 'currency') values[key] = parseCurrencyInput(input.value);
+        else if (type === 'number') values[key] = Number(input.value) || 0;
+        else values[key] = input.value.trim();
+      });
+      finish(values);
+    });
+    el.querySelector('[data-action="cancel"]').addEventListener('click', () => finish(null));
+    el.addEventListener('hidden.bs.modal', () => { finish(null); el.remove(); });
     markModalAsShown(el);
 
     bsModal.show();

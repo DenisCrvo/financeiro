@@ -134,24 +134,38 @@
             <option value="">Todos</option>
           </select>
         </div>
+        <div class="col-md-2 col-6">
+          <label class="form-label small">Mês</label>
+          <select class="form-select form-select-sm" data-history-filter="month">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div class="col-md-2 col-6">
+          <label class="form-label small">Valor mínimo</label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text">R$</span>
+            <input type="text" class="form-control" data-history-filter="min-value" placeholder="0,00" inputmode="decimal">
+          </div>
+        </div>
       </div>
 
-      <div class="table-responsive">
-        <table class="table table-sm table-hover align-middle">
+      <div class="table-responsive history-table-scroll">
+        <table class="table table-sm table-hover align-middle mb-0">
           <thead class="table-light">
             <tr>
               <th>Data/Hora</th>
               <th>Tipo</th>
               <th>Operação</th>
               <th>Detalhes</th>
+              <th class="text-end">Ações</th>
             </tr>
           </thead>
           <tbody data-table="history-list">
-            <tr><td colspan="4" class="text-center text-secondary py-4">Carregando...</td></tr>
+            <tr><td colspan="5" class="text-center text-secondary py-4">Carregando...</td></tr>
           </tbody>
         </table>
       </div>
-      <p class="text-secondary small mb-0" data-history-info></p>
+      <p class="text-secondary small mb-0 mt-2" data-history-info></p>
     </div>
   </div>
 
