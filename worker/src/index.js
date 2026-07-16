@@ -8,6 +8,7 @@ import * as advances from './routes/advances.js';
 import * as expenseTypes from './routes/expenseTypes.js';
 import * as fixedExpenses from './routes/fixedExpenses.js';
 import * as dashboard from './routes/dashboard.js';
+import * as auditLog from './routes/auditLog.js';
 
 // Rotas estáticas (sem :id) — avaliadas antes das rotas com parâmetro.
 const STATIC_ROUTES = [
@@ -31,6 +32,8 @@ const STATIC_ROUTES = [
 
   { method: 'GET', path: '/api/dashboard', handler: dashboard.getDashboard },
   { method: 'GET', path: '/api/dashboard/last-update', handler: dashboard.getLastUpdate },
+
+  { method: 'GET', path: '/api/audit-log', handler: auditLog.listAuditLog },
 ];
 
 // Rotas com :id — prefixo + handlers por método.

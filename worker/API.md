@@ -65,8 +65,17 @@ entram nos totais do Dashboard.**
 
 | Método | Rota | Descrição |
 |---|---|---|
-| GET | `/api/dashboard?year=2026` | Cards e totais mensais (Jan-Dez) para o gráfico |
+| GET | `/api/dashboard?year=2026` | Cards e totais mensais (Jan-Dez) para o gráfico — cada item de `monthly_totals` inclui `total` (geral) e `cards_total` (só Bradesco+Nubank) |
 | GET | `/api/dashboard/last-update` | Timestamp do último registro alterado no banco |
+
+## Histórico (audit log)
+
+Alimentado automaticamente pelos triggers do banco a cada INSERT/UPDATE/DELETE
+nas tabelas de lançamento.
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/api/audit-log?table=credit_cards&operation=UPDATE&year=2026&limit=200` | Lista o histórico, todos os filtros são opcionais. `table`: `credit_cards`\|`employee_monthly`\|`employee_advances`\|`fixed_expenses`. `operation`: `INSERT`\|`UPDATE`\|`DELETE`. `limit`: máx. 500 (padrão 200). Ordenado do mais recente para o mais antigo |
 
 ### Exemplo de resposta — `GET /api/dashboard?year=2026`
 ```json

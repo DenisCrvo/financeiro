@@ -94,3 +94,7 @@ export const dashboardApi = {
   get: (year) => request(`/api/dashboard${qs({ year })}`),
   lastUpdate: () => request('/api/dashboard/last-update'),
 };
+
+export const auditLogApi = {
+  list: ({ table, operation, year, limit } = {}) => request(`/api/audit-log${qs({ table, operation, year, limit })}`),
+};

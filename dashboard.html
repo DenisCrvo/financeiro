@@ -89,6 +89,72 @@
     </div>
   </div>
 
+  <!-- ==================== GRÁFICO — CARTÕES ==================== -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-white">
+      <h2 class="h5 mb-0"><i class="bi bi-credit-card-2-front text-primary me-2"></i>Total Cartões por mês (Bradesco + Nubank)</h2>
+    </div>
+    <div class="card-body">
+      <div class="chart-container">
+        <canvas id="cards-chart" role="img" aria-label="Gráfico de barras com o total das faturas de cartão por mês"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== HISTÓRICO DE LANÇAMENTOS ==================== -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-white">
+      <h2 class="h5 mb-1"><i class="bi bi-clock-history text-primary me-2"></i>Histórico de Lançamentos</h2>
+      <p class="text-secondary small mb-0">Todas as inclusões, atualizações e remoções registradas automaticamente pelo sistema.</p>
+    </div>
+    <div class="card-body">
+      <div class="row g-2 mb-3">
+        <div class="col-md-3 col-6">
+          <label class="form-label small">Tipo de registro</label>
+          <select class="form-select form-select-sm" data-history-filter="table">
+            <option value="">Todos</option>
+            <option value="credit_cards">Cartão de Crédito</option>
+            <option value="employee_monthly">Funcionária</option>
+            <option value="employee_advances">Adiantamento</option>
+            <option value="fixed_expenses">Despesa Fixa</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="form-label small">Operação</label>
+          <select class="form-select form-select-sm" data-history-filter="operation">
+            <option value="">Todas</option>
+            <option value="INSERT">Criado</option>
+            <option value="UPDATE">Atualizado</option>
+            <option value="DELETE">Removido</option>
+          </select>
+        </div>
+        <div class="col-md-2 col-6">
+          <label class="form-label small">Ano</label>
+          <select class="form-select form-select-sm" data-history-filter="year">
+            <option value="">Todos</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Data/Hora</th>
+              <th>Tipo</th>
+              <th>Operação</th>
+              <th>Detalhes</th>
+            </tr>
+          </thead>
+          <tbody data-table="history-list">
+            <tr><td colspan="4" class="text-center text-secondary py-4">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-secondary small mb-0" data-history-info></p>
+    </div>
+  </div>
+
 </main>
 
 <footer class="text-center text-secondary small py-4">

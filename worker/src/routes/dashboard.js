@@ -50,7 +50,7 @@ export async function getDashboard(request, env, url) {
       sumCards(env, year, month),
       sumOtherExpenses(env, year, month),
     ]);
-    monthlyTotals.push({ month, month_name: monthName(month), total: cards + others });
+    monthlyTotals.push({ month, month_name: monthName(month), total: cards + others, cards_total: cards });
   }
 
   return jsonResponse({
