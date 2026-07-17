@@ -6,10 +6,6 @@ import * as creditCards from './routes/creditCards.js';
 import * as expenseTypes from './routes/expenseTypes.js';
 import * as fixedExpenses from './routes/fixedExpenses.js';
 import * as dashboard from './routes/dashboard.js';
-import * as funcionarios from './routes/funcionarios.js';
-import * as rubricas from './routes/rubricas.js';
-import * as parametrosLegais from './routes/parametrosLegais.js';
-import * as folha from './routes/folha.js';
 
 // Rotas estáticas (sem :id) — avaliadas antes das rotas com parâmetro.
 const STATIC_ROUTES = [
@@ -25,19 +21,6 @@ const STATIC_ROUTES = [
 
   { method: 'GET', path: '/api/dashboard', handler: dashboard.getDashboard },
   { method: 'GET', path: '/api/dashboard/last-update', handler: dashboard.getLastUpdate },
-
-  { method: 'GET', path: '/api/funcionarios', handler: funcionarios.listFuncionarios },
-  { method: 'POST', path: '/api/funcionarios', handler: funcionarios.createFuncionario },
-
-  { method: 'GET', path: '/api/rubricas', handler: rubricas.listRubricas },
-  { method: 'POST', path: '/api/rubricas', handler: rubricas.createRubrica },
-
-  { method: 'GET', path: '/api/parametros-legais', handler: parametrosLegais.listParametrosLegais },
-  { method: 'GET', path: '/api/parametros-legais/vigentes', handler: parametrosLegais.getParametrosVigentes },
-  { method: 'POST', path: '/api/parametros-legais', handler: parametrosLegais.createParametrosLegais },
-
-  { method: 'GET', path: '/api/folha', handler: folha.listFolhas },
-  { method: 'POST', path: '/api/folha', handler: folha.processarFolha },
 ];
 
 // Rotas com :id — prefixo + handlers por método.
@@ -45,15 +28,10 @@ const ID_ROUTES = [
   { prefix: '/api/credit-cards/', handlers: { GET: creditCards.getCreditCard, PUT: creditCards.updateCreditCard, DELETE: creditCards.deleteCreditCard } },
   { prefix: '/api/expense-types/', handlers: { PUT: expenseTypes.updateExpenseType, DELETE: expenseTypes.deleteExpenseType } },
   { prefix: '/api/fixed-expenses/', handlers: { GET: fixedExpenses.getFixedExpense, PUT: fixedExpenses.updateFixedExpense, DELETE: fixedExpenses.deleteFixedExpense } },
-  { prefix: '/api/funcionarios/', handlers: { GET: funcionarios.getFuncionario, PUT: funcionarios.updateFuncionario, DELETE: funcionarios.deleteFuncionario } },
-  { prefix: '/api/rubricas/', handlers: { PUT: rubricas.updateRubrica } },
-  { prefix: '/api/folha/', handlers: { GET: folha.getFolha, DELETE: folha.deleteFolha } },
 ];
 
 // Rotas de ação — POST /api/<recurso>/:id/<acao>.
-const ACTION_ROUTES = [
-  { method: 'POST', prefix: '/api/folha/', suffix: '/fechar', handler: folha.fecharFolha },
-];
+const ACTION_ROUTES = [];
 
 function matchStaticRoute(method, pathname) {
   return STATIC_ROUTES.find((r) => r.method === method && r.path === pathname);

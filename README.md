@@ -32,14 +32,11 @@ financeiro/
 │  ├─ src/index.js            # Router + autenticação + CORS
 │  ├─ src/utils.js
 │  ├─ src/routes/*.js         # Um arquivo por recurso da API
-│  ├─ src/domain/*.js         # Motor de cálculo da Folha de Pagamento (puro, sem SQL/HTTP)
 │  ├─ migrations/0001_init.sql
 │  ├─ migrations/0002_drop_employee_features.sql
-│  ├─ migrations/0003_payroll_module.sql
 │  ├─ wrangler.toml
 │  ├─ package.json
-│  ├─ API.md                  # Documentação dos endpoints
-│  └─ PAYROLL.md              # Documentação do módulo de Folha de Pagamento (base legal, ERD, testes)
+│  └─ API.md                  # Documentação dos endpoints
 ├─ .gitignore
 └─ README.md
 ```
@@ -175,11 +172,6 @@ publicar**.
 - `credit_cards` e `fixed_expenses` têm `created_at`/`updated_at` e alimentam
   um `audit_log` automático via triggers SQL (consultável direto no banco).
 - Valores nunca negativos (`CHECK` no banco + validação na API + validação no frontend).
-- **Folha de Pagamento (Empregada Doméstica):** módulo dedicado aderente ao
-  eSocial Doméstico e à LC 150/2015 — INSS/IRRF progressivos, FGTS + FGTS
-  indenizatório, encargos patronais e Vale-Transporte, tudo parametrizado por
-  competência (nada fixo no código). Ver [`worker/PAYROLL.md`](worker/PAYROLL.md)
-  para a documentação completa (base legal, ERD, fluxograma, casos de teste).
 
 ## Checklist de validação
 
@@ -189,7 +181,6 @@ publicar**.
 - [x] Interface de cadastro: cartões (Bradesco/Nubank), despesas fixas com tipos dinâmicos, consulta/edição de lançamentos
 - [x] Fluxo de conflito (atualizar/manter) e modal de confirmação antes de todo lançamento
 - [x] Dashboard com os 2 cards, 2 gráficos de barras Jan-Dez (Chart.js), filtro por ano, última atualização
-- [x] Módulo de Folha de Pagamento: motor de cálculo isolado (domain layer), rubricas parametrizáveis, tabelas legais versionadas por competência, imutabilidade após fechamento, integração financeira automática (`worker/PAYROLL.md`)
 - [x] Testado de ponta a ponta em todas as etapas: API real (`wrangler dev` + D1 local) e interface real em navegador (Chrome headless)
 - [x] `wrangler.toml`, migrations e `.gitignore` prontos para deploy
 - [x] README com instalação, configuração do D1/Workers e publicação no GitHub Pages
