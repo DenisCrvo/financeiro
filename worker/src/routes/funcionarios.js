@@ -1,15 +1,18 @@
 // Rotas: /api/funcionarios
-// Cadastro mínimo de identificação da(s) empregada(s) doméstica(s), exigido
-// pelo eSocial (equivalente aos dados cadastrais dos eventos S-2200/S-2205).
-// Este NÃO é um módulo de lançamento — apenas identificação estável,
-// referenciada pelo módulo de Folha de Pagamento via funcionaria_id.
+// Identificação mínima da(s) empregada(s) doméstica(s) — o foco do sistema
+// é o processamento financeiro da folha, não um cadastro de RH completo.
+// Por isso só o nome é obrigatório; CPF/NIS/data de admissão/cargo/
+// dependentes são opcionais e podem ser preenchidos depois (edição), quando
+// forem necessários (ex.: para uma futura integração com o eSocial).
 
 import { jsonResponse, errorResponse, parseJsonBody, requireFields, HttpError } from '../utils.js';
 
-function validateCpf(cpf) {
+/** Valida o formato do CPF apenas quando ele é informado (campo opcional). */
+function normalizeCpf(cpf) {
+  if (!cpf) return null;
   const digits = String(cpf).replace(/\D/g, '');
   if (digits.length !== 11) {
-    throw new HttpError('CPF deve conter 11 dígitos.', 422);
+    throw new HttpError('CPF deve conter 11 dígitos (ou deixe em branco).', 422);
   }
   return digits;
 }
@@ -35,22 +38,28 @@ export async function getFuncionario(request, env, id) {
 
 export async function createFuncionario(request, env) {
   const body = await parseJsonBody(request);
-  requireFields(body, ['nome', 'cpf', 'data_admissao']);
-  const cpf = validateCpf(body.cpf);
+  requireFields(body, ['nome']);
+  const nome = String(body.nome).trim();
+  if (!nome) throw new HttpError('O campo "nome" não pode ser vazio.', 422);
 
-  const existing = await env.DB.prepare('SELECT id FROM funcionarios WHERE cpf = ?').bind(cpf).first();
-  if (existing) {
-    return jsonResponse({ error: 'Já existe uma funcionária cadastrada com este CPF.' }, 409);
+  const cpf = normalizeCpf(body.cpf);
+  if (cpf) {
+    const existing = await env.DB.prepare('SELECT id FROM funcionarios WHERE cpf = ?').bind(cpf).first();
+    if (existing) {
+      return jsonResponse({ error: 'Já existe uma funcionária cadastrada com este CPF.' }, 409);
+    }
   }
 
-  const dependentes = Number.isInteger(Number(body.dependentes_irrf)) ? Number(body.dependentes_irrf) : 0;
-  if (dependentes < 0) throw new HttpError('dependentes_irrf não pode ser negativo.', 422);
+  const dependentes = body.dependentes_irrf !== undefined ? Number(body.dependentes_irrf) : 0;
+  if (!Number.isInteger(dependentes) || dependentes < 0) {
+    throw new HttpError('dependentes_irrf deve ser um inteiro maior ou igual a zero.', 422);
+  }
 
   const result = await env.DB.prepare(
     `INSERT INTO funcionarios (nome, cpf, nis, data_admissao, cargo, categoria_esocial, dependentes_irrf)
      VALUES (?, ?, ?, ?, ?, ?, ?)`
   ).bind(
-    String(body.nome).trim(), cpf, body.nis ?? null, body.data_admissao,
+    nome, cpf, body.nis || null, body.data_admissao || null,
     body.cargo?.trim() || 'Empregado(a) Doméstico(a)', body.categoria_esocial ?? '104', dependentes
   ).run();
 
@@ -77,14 +86,26 @@ export async function updateFuncionario(request, env, id) {
     throw new HttpError('dependentes_irrf deve ser um inteiro maior ou igual a zero.', 422);
   }
 
+  let cpf = existing.cpf;
+  if (body.cpf !== undefined) {
+    cpf = normalizeCpf(body.cpf);
+    if (cpf) {
+      const duplicate = await env.DB.prepare('SELECT id FROM funcionarios WHERE cpf = ? AND id != ?')
+        .bind(cpf, id).first();
+      if (duplicate) return jsonResponse({ error: 'Já existe uma funcionária cadastrada com este CPF.' }, 409);
+    }
+  }
+
   await env.DB.prepare(
     `UPDATE funcionarios SET
-       nome = ?, nis = ?, cargo = ?, categoria_esocial = ?, dependentes_irrf = ?,
+       nome = ?, cpf = ?, nis = ?, data_admissao = ?, cargo = ?, categoria_esocial = ?, dependentes_irrf = ?,
        situacao = ?, data_desligamento = ?, atualizado_em = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
      WHERE id = ?`
   ).bind(
     body.nome?.trim() || existing.nome,
-    body.nis !== undefined ? body.nis : existing.nis,
+    cpf,
+    body.nis !== undefined ? (body.nis || null) : existing.nis,
+    body.data_admissao !== undefined ? (body.data_admissao || null) : existing.data_admissao,
     body.cargo?.trim() || existing.cargo,
     body.categoria_esocial ?? existing.categoria_esocial,
     dependentes,

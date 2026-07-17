@@ -335,6 +335,17 @@ export function editRecordModal({ title, readOnlyRows = [], fields }) {
       hideModal(bsModal, el);
     };
 
+    // Bootstrap move o foco para o próprio <div class="modal"> assim que a
+    // transição de abertura termina ('shown.bs.modal'), mesmo que o usuário
+    // já tenha clicado e começado a digitar no campo antes disso — o efeito
+    // é perder os caracteres digitados nesse meio-tempo. Focar o primeiro
+    // campo aqui garante que o foco volte para ele (não para o modal),
+    // sem cortar a digitação em andamento.
+    const firstField = el.querySelector('[data-field-key]');
+    if (firstField) {
+      el.addEventListener('shown.bs.modal', () => firstField.focus());
+    }
+
     el.querySelector('[data-action="save"]').addEventListener('click', () => {
       const values = {};
       el.querySelectorAll('[data-field-key]').forEach((input) => {

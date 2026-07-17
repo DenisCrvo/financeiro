@@ -275,27 +275,53 @@ async function loadFuncionariasIntoSelect(select) {
 }
 
 async function handleNewFuncionaria() {
-  const today = new Date().toISOString().slice(0, 10);
   const values = await editRecordModal({
     title: 'Nova Funcionária',
     fields: [
-      { key: 'nome', label: 'Nome completo', type: 'text', value: '' },
-      { key: 'cpf', label: 'CPF (somente números)', type: 'text', value: '' },
-      { key: 'nis', label: 'NIS/PIS (opcional)', type: 'text', value: '' },
-      { key: 'data_admissao', label: 'Data de admissão', type: 'date', value: today },
-      { key: 'cargo', label: 'Cargo', type: 'text', value: 'Empregado(a) Doméstico(a)' },
-      { key: 'dependentes_irrf', label: 'Dependentes para dedução do IRRF', type: 'number', value: 0 },
+      { key: 'nome', label: 'Nome', type: 'text', value: '' },
     ],
   });
   if (!values) return;
-  if (!values.nome || !values.cpf || !values.data_admissao) {
-    showToast('Nome, CPF e data de admissão são obrigatórios.', 'warning');
+  if (!values.nome?.trim()) {
+    showToast('Informe o nome.', 'warning');
     return;
   }
 
   try {
-    await funcionariosApi.create(values);
+    await funcionariosApi.create({ nome: values.nome.trim() });
     showToast('Funcionária cadastrada com sucesso.', 'success');
+    await refreshFuncionariasList();
+    await loadFuncionariasIntoSelect(document.querySelector('[data-form="folha"] [data-field="funcionaria_id"]'));
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function handleEditFuncionaria(id) {
+  let funcionaria;
+  try {
+    funcionaria = await funcionariosApi.getById(id);
+  } catch (err) {
+    showToast(err.message, 'error');
+    return;
+  }
+
+  const values = await editRecordModal({
+    title: 'Editar Funcionária',
+    fields: [
+      { key: 'nome', label: 'Nome', type: 'text', value: funcionaria.nome },
+      { key: 'cpf', label: 'CPF (opcional, somente números)', type: 'text', value: funcionaria.cpf ?? '' },
+      { key: 'nis', label: 'NIS/PIS (opcional)', type: 'text', value: funcionaria.nis ?? '' },
+      { key: 'data_admissao', label: 'Data de admissão (opcional)', type: 'date', value: funcionaria.data_admissao ?? '' },
+      { key: 'cargo', label: 'Cargo', type: 'text', value: funcionaria.cargo },
+      { key: 'dependentes_irrf', label: 'Dependentes para dedução do IRRF', type: 'number', value: funcionaria.dependentes_irrf },
+    ],
+  });
+  if (!values) return;
+
+  try {
+    await funcionariosApi.update(id, values);
+    showToast('Funcionária atualizada com sucesso.', 'success');
     await refreshFuncionariasList();
     await loadFuncionariasIntoSelect(document.querySelector('[data-form="folha"] [data-field="funcionaria_id"]'));
   } catch (err) {
@@ -315,10 +341,13 @@ async function refreshFuncionariasList() {
     tbody.innerHTML = funcionarias.map((f) => `
       <tr>
         <td>${f.nome}</td>
-        <td>${f.cpf}</td>
-        <td>${new Date(f.data_admissao + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
+        <td>${f.cpf ?? '—'}</td>
+        <td>${f.data_admissao ? new Date(f.data_admissao + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</td>
         <td><span class="badge ${SITUACAO_BADGE[f.situacao]}">${SITUACAO_LABELS[f.situacao]}</span></td>
         <td class="text-end text-nowrap">
+          <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-funcionaria-action="editar" data-id="${f.id}" title="Editar">
+            <i class="bi bi-pencil"></i>
+          </button>
           ${f.situacao !== 'desligado' ? `
           <button type="button" class="btn btn-sm btn-outline-warning me-1" data-funcionaria-action="desligar" data-id="${f.id}" title="Desligar">
             <i class="bi bi-person-dash"></i>
@@ -330,6 +359,9 @@ async function refreshFuncionariasList() {
       </tr>
     `).join('');
 
+    tbody.querySelectorAll('[data-funcionaria-action="editar"]').forEach((btn) => {
+      btn.addEventListener('click', () => handleEditFuncionaria(btn.dataset.id));
+    });
     tbody.querySelectorAll('[data-funcionaria-action="desligar"]').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const dataDesligamento = prompt('Data de desligamento (AAAA-MM-DD):', new Date().toISOString().slice(0, 10));
