@@ -285,6 +285,14 @@ export function editRecordModal({ title, readOnlyRows = [], fields }) {
                    value="${field.value ?? 0}">
           </div>`;
       }
+      if (field.type === 'date') {
+        return `
+          <div class="mb-2">
+            <label class="form-label small">${field.label}</label>
+            <input type="date" class="form-control" data-field-key="${field.key}" data-field-type="text"
+                   value="${field.value ?? ''}">
+          </div>`;
+      }
       return `
         <div class="mb-2">
           <label class="form-label small">${field.label}</label>
@@ -340,6 +348,54 @@ export function editRecordModal({ title, readOnlyRows = [], fields }) {
     });
     el.querySelector('[data-action="cancel"]').addEventListener('click', () => finish(null));
     el.addEventListener('hidden.bs.modal', () => { finish(null); el.remove(); });
+    markModalAsShown(el);
+
+    bsModal.show();
+  });
+}
+
+/**
+ * Modal somente leitura, para exibir um detalhamento (ex.: composição de uma
+ * folha de pagamento). Um único botão "Fechar".
+ * @param {{title: string, rows: Array<[string,string]>}} options
+ * @returns {Promise<void>}
+ */
+export function infoModal({ title, rows = [] }) {
+  return new Promise((resolve) => {
+    const rowsHtml = rows.map(
+      ([label, value]) => `
+        <div class="d-flex justify-content-between border-bottom py-2">
+          <span class="text-secondary">${label}</span>
+          <span class="fw-semibold">${value}</span>
+        </div>`
+    ).join('');
+
+    const el = createModalElement(`
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bi bi-info-circle me-2"></i>${title}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">${rowsHtml}</div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-action="close">Fechar</button>
+          </div>
+        </div>
+      </div>
+    `);
+
+    const bsModal = new bootstrap.Modal(el);
+    let resolved = false;
+    const finish = () => {
+      if (resolved) return;
+      resolved = true;
+      resolve();
+      hideModal(bsModal, el);
+    };
+
+    el.querySelector('[data-action="close"]').addEventListener('click', () => finish());
+    el.addEventListener('hidden.bs.modal', () => { finish(); el.remove(); });
     markModalAsShown(el);
 
     bsModal.show();

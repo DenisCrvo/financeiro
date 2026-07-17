@@ -138,6 +138,143 @@
     </div>
   </section>
 
+  <!-- ==================== FOLHA DE PAGAMENTO ==================== -->
+  <section class="card shadow-sm mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <h2 class="h5 mb-1"><i class="bi bi-cash-stack text-primary me-2"></i>Folha de Pagamento — Empregada Doméstica</h2>
+        <p class="text-secondary small mb-0">
+          Cálculo conforme eSocial Doméstico e LC 150/2015 (INSS, IRRF, FGTS, encargos e Vale-Transporte).
+          <strong>Confira os parâmetros legais vigentes antes de fechar uma folha</strong> — ver <code>worker/PAYROLL.md</code>.
+        </p>
+      </div>
+    </div>
+    <div class="card-body">
+
+      <!-- Funcionárias -->
+      <div class="d-flex justify-content-between align-items-end mb-3">
+        <h3 class="h6 mb-0"><i class="bi bi-person-vcard me-2"></i>Funcionárias cadastradas</h3>
+        <button type="button" class="btn btn-sm btn-outline-primary" data-action="new-funcionaria">
+          <i class="bi bi-plus-lg me-1"></i>Nova funcionária
+        </button>
+      </div>
+      <div class="table-responsive mb-4">
+        <table class="table table-sm table-hover align-middle">
+          <thead class="table-light">
+            <tr><th>Nome</th><th>CPF</th><th>Admissão</th><th>Situação</th><th class="text-end">Ações</th></tr>
+          </thead>
+          <tbody data-table="funcionarias-list">
+            <tr><td colspan="5" class="text-center text-secondary py-3">Nenhuma funcionária cadastrada.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <hr class="my-4">
+
+      <!-- Processar folha -->
+      <h3 class="h6 mb-3"><i class="bi bi-calculator me-2"></i>Processar Folha</h3>
+      <form data-form="folha" novalidate>
+        <div class="row g-3 mb-3">
+          <div class="col-md-4 col-6">
+            <label class="form-label small">Funcionária</label>
+            <select class="form-select" data-field="funcionaria_id" required></select>
+          </div>
+          <div class="col-md-2 col-6">
+            <label class="form-label small">Ano</label>
+            <select class="form-select" data-field="year" required></select>
+          </div>
+          <div class="col-md-2 col-6">
+            <label class="form-label small">Mês</label>
+            <select class="form-select" data-field="month" required></select>
+          </div>
+          <div class="col-md-4 col-6">
+            <label class="form-label small">Salário Base</label>
+            <div class="input-group">
+              <span class="input-group-text">R$</span>
+              <input type="text" class="form-control" data-field="salario_base" placeholder="0,00" inputmode="decimal" required>
+            </div>
+          </div>
+        </div>
+
+        <p class="text-secondary small mb-2">Verbas variáveis (opcional) — o sistema não calcula automaticamente, informe os valores já apurados:</p>
+        <div class="row g-3 mb-3">
+          <div class="col-md-3 col-6">
+            <label class="form-label small">Horas Extras</label>
+            <div class="input-group"><span class="input-group-text">R$</span>
+              <input type="text" class="form-control" data-field="horas_extras" placeholder="0,00" inputmode="decimal"></div>
+          </div>
+          <div class="col-md-3 col-6">
+            <label class="form-label small">Adicional Noturno</label>
+            <div class="input-group"><span class="input-group-text">R$</span>
+              <input type="text" class="form-control" data-field="adicional_noturno" placeholder="0,00" inputmode="decimal"></div>
+          </div>
+          <div class="col-md-3 col-6">
+            <label class="form-label small">Insalubridade</label>
+            <div class="input-group"><span class="input-group-text">R$</span>
+              <input type="text" class="form-control" data-field="insalubridade" placeholder="0,00" inputmode="decimal"></div>
+          </div>
+          <div class="col-md-3 col-6">
+            <label class="form-label small">Periculosidade</label>
+            <div class="input-group"><span class="input-group-text">R$</span>
+              <input type="text" class="form-control" data-field="periculosidade" placeholder="0,00" inputmode="decimal"></div>
+          </div>
+          <div class="col-md-3 col-6">
+            <label class="form-label small">Comissões</label>
+            <div class="input-group"><span class="input-group-text">R$</span>
+              <input type="text" class="form-control" data-field="comissoes" placeholder="0,00" inputmode="decimal"></div>
+          </div>
+          <div class="col-md-3 col-6">
+            <label class="form-label small">Outras Verbas</label>
+            <div class="input-group"><span class="input-group-text">R$</span>
+              <input type="text" class="form-control" data-field="outras_verbas" placeholder="0,00" inputmode="decimal"></div>
+          </div>
+          <div class="col-md-3 col-6">
+            <label class="form-label small">Descontos Diversos</label>
+            <div class="input-group"><span class="input-group-text">R$</span>
+              <input type="text" class="form-control" data-field="descontos" placeholder="0,00" inputmode="decimal"></div>
+          </div>
+        </div>
+
+        <p class="text-secondary small mb-2">Vale-Transporte (Lei 7.418/1985):</p>
+        <div class="row g-3 mb-3">
+          <div class="col-md-3 col-6">
+            <label class="form-label small">Dias úteis trabalhados</label>
+            <input type="number" min="0" class="form-control" data-field="dias_uteis" required>
+          </div>
+          <div class="col-md-3 col-6">
+            <label class="form-label small">Valor passagem/dia (ida+volta)</label>
+            <div class="input-group"><span class="input-group-text">R$</span>
+              <input type="text" class="form-control" data-field="valor_passagem_dia" placeholder="0,00" inputmode="decimal" required></div>
+          </div>
+          <div class="col-md-3 col-6">
+            <label class="form-label small">% Desconto VT</label>
+            <div class="input-group"><input type="number" min="0" max="100" step="0.1" class="form-control" data-field="percentual_desconto_vt" placeholder="6"><span class="input-group-text">%</span></div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary"><i class="bi bi-calculator me-1"></i>Processar Folha</button>
+      </form>
+
+      <hr class="my-4">
+
+      <!-- Folhas processadas -->
+      <h3 class="h6 mb-3"><i class="bi bi-clipboard-data me-2"></i>Folhas Processadas</h3>
+      <div class="table-responsive scrollable-table">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Competência</th><th>Funcionária</th><th class="text-end">Salário Líquido</th>
+              <th>Status</th><th class="text-end">Ações</th>
+            </tr>
+          </thead>
+          <tbody data-table="folhas-list">
+            <tr><td colspan="5" class="text-center text-secondary py-3">Nenhuma folha processada.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
   <!-- ==================== CONSULTAR E EDITAR LANÇAMENTOS ==================== -->
   <section class="card shadow-sm mb-4">
     <div class="card-header bg-white">

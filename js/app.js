@@ -1,13 +1,18 @@
 // Orquestração da tela de Cadastro de Despesas (index.html).
 // Liga os formulários da interface aos serviços de negócio e à API.
 
-import { creditCardsApi, expenseTypesApi, fixedExpensesApi } from './api.js';
+import {
+  creditCardsApi, expenseTypesApi, fixedExpensesApi,
+  funcionariosApi, parametrosLegaisApi, folhaApi,
+} from './api.js';
 import {
   formatCurrencyBRL, attachCurrencyMask, getCurrencyInputValue,
   populateYearSelect, populateMonthSelect, monthName, MONTH_NAMES_PT,
 } from './utils.js';
 import { showToast } from '../components/toast.js';
-import { confirmModal, newExpenseTypeModal, manageExpenseTypesModal, editRecordModal } from '../components/modal.js';
+import {
+  confirmModal, newExpenseTypeModal, manageExpenseTypesModal, editRecordModal, infoModal,
+} from '../components/modal.js';
 import { validateCreditCardForm, validateFixedExpenseForm } from '../services/financeiroService.js';
 
 const CARD_LABELS = { bradesco: 'Bradesco', nubank: 'Nubank' };
@@ -15,6 +20,7 @@ const CARD_LABELS = { bradesco: 'Bradesco', nubank: 'Nubank' };
 document.addEventListener('DOMContentLoaded', () => {
   initCreditCardsSection();
   initFixedExpensesSection();
+  initFolhaSection();
   initQuerySection();
 });
 
@@ -222,6 +228,267 @@ async function handleFixedExpenseSubmit(e, form, typeSelect, monthsContainer) {
     renderMonthCheckboxes(monthsContainer, 'fx-month');
     populateYearSelect(form.querySelector('[data-field="year"]'));
     refreshQueryResults();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Folha de Pagamento — Empregada Doméstica (eSocial Doméstico, LC 150/2015)
+// ---------------------------------------------------------------------------
+
+const SITUACAO_LABELS = { ativo: 'Ativo', afastado: 'Afastado', desligado: 'Desligado' };
+const SITUACAO_BADGE = { ativo: 'text-bg-success', afastado: 'text-bg-warning', desligado: 'text-bg-secondary' };
+const FOLHA_VERBA_FIELDS = [
+  'horas_extras', 'adicional_noturno', 'insalubridade', 'periculosidade', 'comissoes', 'outras_verbas', 'descontos',
+];
+
+function initFolhaSection() {
+  const form = document.querySelector('[data-form="folha"]');
+  if (!form) return;
+
+  populateYearSelect(form.querySelector('[data-field="year"]'));
+  populateMonthSelect(form.querySelector('[data-field="month"]'));
+  attachCurrencyMask(form.querySelector('[data-field="salario_base"]'));
+  attachCurrencyMask(form.querySelector('[data-field="valor_passagem_dia"]'));
+  FOLHA_VERBA_FIELDS.forEach((field) => attachCurrencyMask(form.querySelector(`[data-field="${field}"]`)));
+
+  document.querySelector('[data-action="new-funcionaria"]').addEventListener('click', handleNewFuncionaria);
+
+  form.addEventListener('submit', handleProcessarFolha);
+
+  loadFuncionariasIntoSelect(form.querySelector('[data-field="funcionaria_id"]'));
+  refreshFuncionariasList();
+  refreshFolhasList();
+}
+
+async function loadFuncionariasIntoSelect(select) {
+  try {
+    const funcionarias = await funcionariosApi.list('ativo');
+    const previousValue = select.value;
+    select.innerHTML = '<option value="" disabled selected>Selecione...</option>' +
+      funcionarias.map((f) => `<option value="${f.id}">${f.nome}</option>`).join('');
+    if (previousValue && funcionarias.some((f) => String(f.id) === previousValue)) select.value = previousValue;
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function handleNewFuncionaria() {
+  const today = new Date().toISOString().slice(0, 10);
+  const values = await editRecordModal({
+    title: 'Nova Funcionária',
+    fields: [
+      { key: 'nome', label: 'Nome completo', type: 'text', value: '' },
+      { key: 'cpf', label: 'CPF (somente números)', type: 'text', value: '' },
+      { key: 'nis', label: 'NIS/PIS (opcional)', type: 'text', value: '' },
+      { key: 'data_admissao', label: 'Data de admissão', type: 'date', value: today },
+      { key: 'cargo', label: 'Cargo', type: 'text', value: 'Empregado(a) Doméstico(a)' },
+      { key: 'dependentes_irrf', label: 'Dependentes para dedução do IRRF', type: 'number', value: 0 },
+    ],
+  });
+  if (!values) return;
+  if (!values.nome || !values.cpf || !values.data_admissao) {
+    showToast('Nome, CPF e data de admissão são obrigatórios.', 'warning');
+    return;
+  }
+
+  try {
+    await funcionariosApi.create(values);
+    showToast('Funcionária cadastrada com sucesso.', 'success');
+    await refreshFuncionariasList();
+    await loadFuncionariasIntoSelect(document.querySelector('[data-form="folha"] [data-field="funcionaria_id"]'));
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function refreshFuncionariasList() {
+  const tbody = document.querySelector('[data-table="funcionarias-list"]');
+  if (!tbody) return;
+  try {
+    const funcionarias = await funcionariosApi.list();
+    if (funcionarias.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-secondary py-3">Nenhuma funcionária cadastrada.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = funcionarias.map((f) => `
+      <tr>
+        <td>${f.nome}</td>
+        <td>${f.cpf}</td>
+        <td>${new Date(f.data_admissao + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
+        <td><span class="badge ${SITUACAO_BADGE[f.situacao]}">${SITUACAO_LABELS[f.situacao]}</span></td>
+        <td class="text-end text-nowrap">
+          ${f.situacao !== 'desligado' ? `
+          <button type="button" class="btn btn-sm btn-outline-warning me-1" data-funcionaria-action="desligar" data-id="${f.id}" title="Desligar">
+            <i class="bi bi-person-dash"></i>
+          </button>` : ''}
+          <button type="button" class="btn btn-sm btn-outline-danger" data-funcionaria-action="excluir" data-id="${f.id}" title="Excluir">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `).join('');
+
+    tbody.querySelectorAll('[data-funcionaria-action="desligar"]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const dataDesligamento = prompt('Data de desligamento (AAAA-MM-DD):', new Date().toISOString().slice(0, 10));
+        if (!dataDesligamento) return;
+        try {
+          await funcionariosApi.update(btn.dataset.id, { situacao: 'desligado', data_desligamento: dataDesligamento });
+          showToast('Funcionária desligada.', 'success');
+          await refreshFuncionariasList();
+          await loadFuncionariasIntoSelect(document.querySelector('[data-form="folha"] [data-field="funcionaria_id"]'));
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      });
+    });
+    tbody.querySelectorAll('[data-funcionaria-action="excluir"]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Excluir esta funcionária?')) return;
+        try {
+          await funcionariosApi.remove(btn.dataset.id);
+          showToast('Funcionária removida.', 'success');
+          await refreshFuncionariasList();
+          await loadFuncionariasIntoSelect(document.querySelector('[data-form="folha"] [data-field="funcionaria_id"]'));
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      });
+    });
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function handleProcessarFolha(e) {
+  e.preventDefault();
+  const form = e.target;
+  const funcionariaId = form.querySelector('[data-field="funcionaria_id"]').value;
+  const year = form.querySelector('[data-field="year"]').value;
+  const month = form.querySelector('[data-field="month"]').value;
+  const salarioBase = getCurrencyInputValue(form.querySelector('[data-field="salario_base"]'));
+  const diasUteis = Number(form.querySelector('[data-field="dias_uteis"]').value) || 0;
+  const valorPassagemDia = getCurrencyInputValue(form.querySelector('[data-field="valor_passagem_dia"]'));
+  const percentualInput = form.querySelector('[data-field="percentual_desconto_vt"]').value;
+
+  if (!funcionariaId) { showToast('Selecione a funcionária.', 'warning'); return; }
+  if (salarioBase <= 0) { showToast('Informe o salário base.', 'warning'); return; }
+
+  const payload = {
+    funcionaria_id: Number(funcionariaId),
+    competencia: `${year}-${String(month).padStart(2, '0')}`,
+    salario_base: salarioBase,
+    dias_uteis: diasUteis,
+    valor_passagem_dia: valorPassagemDia,
+  };
+  FOLHA_VERBA_FIELDS.forEach((field) => {
+    payload[field] = getCurrencyInputValue(form.querySelector(`[data-field="${field}"]`));
+  });
+  if (percentualInput) payload.percentual_desconto_vt = Number(percentualInput) / 100;
+
+  try {
+    const folha = await folhaApi.processar(payload);
+    showToast(`Folha processada — salário líquido: ${formatCurrencyBRL(folha.salario_liquido)}`, 'success');
+    form.reset();
+    populateYearSelect(form.querySelector('[data-field="year"]'));
+    populateMonthSelect(form.querySelector('[data-field="month"]'));
+    await refreshFolhasList();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function refreshFolhasList() {
+  const tbody = document.querySelector('[data-table="folhas-list"]');
+  if (!tbody) return;
+  try {
+    const folhas = await folhaApi.list();
+    if (folhas.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-secondary py-3">Nenhuma folha processada.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = folhas.map((f) => `
+      <tr>
+        <td>${monthName(Number(f.competencia.slice(5, 7)))}/${f.competencia.slice(0, 4)}</td>
+        <td>${f.funcionaria_nome}</td>
+        <td class="text-end">${formatCurrencyBRL(f.salario_liquido)}</td>
+        <td><span class="badge ${f.status === 'fechada' ? 'text-bg-secondary' : 'text-bg-warning'}">${f.status === 'fechada' ? 'Fechada' : 'Aberta'}</span></td>
+        <td class="text-end text-nowrap">
+          <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-folha-action="ver" data-id="${f.id}" title="Ver detalhamento">
+            <i class="bi bi-eye"></i>
+          </button>
+          ${f.status === 'aberta' ? `
+          <button type="button" class="btn btn-sm btn-outline-success me-1" data-folha-action="fechar" data-id="${f.id}" title="Fechar folha">
+            <i class="bi bi-lock"></i>
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-danger" data-folha-action="excluir" data-id="${f.id}" title="Excluir">
+            <i class="bi bi-trash"></i>
+          </button>` : ''}
+        </td>
+      </tr>
+    `).join('');
+
+    tbody.querySelectorAll('[data-folha-action="ver"]').forEach((btn) => {
+      btn.addEventListener('click', () => handleVerFolha(btn.dataset.id));
+    });
+    tbody.querySelectorAll('[data-folha-action="fechar"]').forEach((btn) => {
+      btn.addEventListener('click', () => handleFecharFolha(btn.dataset.id));
+    });
+    tbody.querySelectorAll('[data-folha-action="excluir"]').forEach((btn) => {
+      btn.addEventListener('click', () => handleExcluirFolha(btn.dataset.id));
+    });
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function handleVerFolha(id) {
+  try {
+    const f = await folhaApi.getById(id);
+    await infoModal({
+      title: `Folha — ${monthName(Number(f.competencia.slice(5, 7)))}/${f.competencia.slice(0, 4)} (${f.funcionaria_nome})`,
+      rows: [
+        ['Salário Base', formatCurrencyBRL(f.salario_base)],
+        ['Salário Bruto', formatCurrencyBRL(f.salario_bruto)],
+        ['Base INSS', formatCurrencyBRL(f.base_inss)],
+        ['INSS (empregado)', formatCurrencyBRL(f.valor_inss)],
+        ['Base IRRF', formatCurrencyBRL(f.base_irrf)],
+        ['IRRF', formatCurrencyBRL(f.valor_irrf)],
+        ['Base FGTS', formatCurrencyBRL(f.base_fgts)],
+        ['FGTS (8%)', formatCurrencyBRL(f.valor_fgts)],
+        ['FGTS Indenizatório (3,2%)', formatCurrencyBRL(f.valor_fgts_indenizatorio)],
+        ['Encargos Empregador (INSS patronal + RAT)', formatCurrencyBRL(f.encargos_empregador)],
+        ['VT Depositado', formatCurrencyBRL(f.valor_vt_depositado)],
+        ['Desconto VT', formatCurrencyBRL(f.desconto_vt)],
+        ['Descontos Diversos', formatCurrencyBRL(f.descontos)],
+        ['Salário Líquido', formatCurrencyBRL(f.salario_liquido)],
+        ['Status', f.status === 'fechada' ? 'Fechada' : 'Aberta'],
+      ],
+    });
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function handleFecharFolha(id) {
+  if (!confirm('Fechar esta folha? Depois de fechada ela não poderá mais ser alterada ou excluída, e os lançamentos financeiros (salário, VT e encargos) serão registrados automaticamente.')) return;
+  try {
+    await folhaApi.fechar(id);
+    showToast('Folha fechada e lançamentos financeiros registrados.', 'success');
+    await refreshFolhasList();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function handleExcluirFolha(id) {
+  if (!confirm('Excluir esta folha (ainda aberta)?')) return;
+  try {
+    await folhaApi.remove(id);
+    showToast('Folha removida.', 'success');
+    await refreshFolhasList();
   } catch (err) {
     showToast(err.message, 'error');
   }

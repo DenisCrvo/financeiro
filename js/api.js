@@ -78,3 +78,26 @@ export const dashboardApi = {
   get: (year) => request(`/api/dashboard${qs({ year })}`),
   lastUpdate: () => request('/api/dashboard/last-update'),
 };
+
+// Módulo de Folha de Pagamento — Empregada Doméstica (eSocial Doméstico,
+// LC 150/2015). Ver worker/PAYROLL.md para a documentação completa.
+export const funcionariosApi = {
+  list: (situacao) => request(`/api/funcionarios${qs({ situacao })}`),
+  getById: (id) => request(`/api/funcionarios/${id}`),
+  create: (data) => request('/api/funcionarios', { method: 'POST', body: data }),
+  update: (id, data) => request(`/api/funcionarios/${id}`, { method: 'PUT', body: data }),
+  remove: (id) => request(`/api/funcionarios/${id}`, { method: 'DELETE' }),
+};
+
+export const parametrosLegaisApi = {
+  list: () => request('/api/parametros-legais'),
+  vigentes: (competencia) => request(`/api/parametros-legais/vigentes${qs({ competencia })}`),
+};
+
+export const folhaApi = {
+  list: ({ funcionaria_id, year } = {}) => request(`/api/folha${qs({ funcionaria_id, year })}`),
+  getById: (id) => request(`/api/folha/${id}`),
+  processar: (data) => request('/api/folha', { method: 'POST', body: data }),
+  fechar: (id) => request(`/api/folha/${id}/fechar`, { method: 'POST' }),
+  remove: (id) => request(`/api/folha/${id}`, { method: 'DELETE' }),
+};

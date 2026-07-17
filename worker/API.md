@@ -38,6 +38,47 @@ Requisições sem token válido recebem `401 Não autorizado`.
 | PUT | `/api/fixed-expenses/:id` | Atualiza `{value, description?}` |
 | DELETE | `/api/fixed-expenses/:id` | Remove lançamento |
 
+## Folha de Pagamento (Empregada Doméstica)
+
+Ver [`PAYROLL.md`](PAYROLL.md) para a documentação completa (base legal,
+ERD, fluxograma, casos de teste, estratégia de atualização anual).
+
+### Funcionárias (identificação mínima)
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/api/funcionarios?situacao=ativo` | Lista (filtro opcional por situação) |
+| GET | `/api/funcionarios/:id` | Busca uma funcionária |
+| POST | `/api/funcionarios` | Cria `{nome, cpf, nis?, data_admissao, cargo?, categoria_esocial?, dependentes_irrf?}`. 409 se CPF já existir |
+| PUT | `/api/funcionarios/:id` | Atualiza dados cadastrais / situação (`ativo`\|`afastado`\|`desligado`) |
+| DELETE | `/api/funcionarios/:id` | Remove (bloqueado se houver folhas vinculadas) |
+
+### Rubricas (Tabela de Rubricas — conceito S-1010)
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/api/rubricas?ativo=true` | Lista (filtro opcional) |
+| POST | `/api/rubricas` | Cria `{codigo, descricao, natureza_esocial, tipo, incidencia_inss?, incidencia_irrf?, incidencia_fgts?}` |
+| PUT | `/api/rubricas/:id` | Atualiza descrição/incidências/ativo |
+
+### Parâmetros Legais
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/api/parametros-legais` | Lista todas as versões, mais recente primeiro |
+| GET | `/api/parametros-legais/vigentes?competencia=2026-07-01` | Retorna a versão vigente para a competência |
+| POST | `/api/parametros-legais` | Cria uma nova versão (ver `PAYROLL.md`, seção "Atualização anual") |
+
+### Folha de Pagamento
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/api/folha?funcionaria_id=1&year=2026` | Lista folhas (filtros opcionais) |
+| GET | `/api/folha/:id` | Detalhe completo (+ rubricas + lançamentos financeiros) |
+| POST | `/api/folha` | Processa uma nova folha `{funcionaria_id, competencia, salario_base, dias_uteis, valor_passagem_dia, horas_extras?, adicional_noturno?, insalubridade?, periculosidade?, comissoes?, outras_verbas?, descontos?, percentual_desconto_vt?}`. Cria com `status: "aberta"` |
+| POST | `/api/folha/:id/fechar` | Fecha a folha (imutável a partir daqui) e registra os 3 lançamentos financeiros |
+| DELETE | `/api/folha/:id` | Remove (somente se `status: "aberta"`; 409 se já fechada) |
+
 ## Dashboard
 
 | Método | Rota | Descrição |
