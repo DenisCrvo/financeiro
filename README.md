@@ -33,6 +33,7 @@ financeiro/
 │  ├─ src/utils.js
 │  ├─ src/routes/*.js         # Um arquivo por recurso da API
 │  ├─ migrations/0001_init.sql
+│  ├─ migrations/0002_drop_employee_features.sql
 │  ├─ wrangler.toml
 │  ├─ package.json
 │  └─ API.md                  # Documentação dos endpoints
@@ -163,25 +164,24 @@ publicar**.
 - Uma fatura de cartão por (cartão, ano, mês); ao repetir o mês, a interface
   mostra o último valor registrado com as opções **Atualizar valor** /
   **Manter lançamento anterior**.
-- Vale-transporte calculado em tempo real (dias × valor diário).
 - Despesas fixas podem ser lançadas em vários meses de uma vez, com o mesmo valor.
-- Adiantamentos usam o mesmo formato de lançamento em lote (ano + meses) e
-  **não entram nos totais do Dashboard** — servem só para controle de desconto
-  em folha/e-social.
 - Todo lançamento passa por um modal de confirmação com o resumo antes de gravar.
-- Todas as tabelas de lançamento têm `created_at`/`updated_at` e alimentam um
-  `audit_log` automático via triggers SQL.
+- A tela de Cadastro tem uma área de **Consultar e Editar Lançamentos**, com
+  filtros por tipo/ano/mês e ações de editar/excluir sobre os registros já
+  existentes (Cartões e Despesas Fixas).
+- `credit_cards` e `fixed_expenses` têm `created_at`/`updated_at` e alimentam
+  um `audit_log` automático via triggers SQL (consultável direto no banco).
 - Valores nunca negativos (`CHECK` no banco + validação na API + validação no frontend).
 
 ## Checklist de validação
 
 - [x] Arquitetura desacoplada (frontend estático + API + banco), documentada na Etapa 1
-- [x] Banco D1 com tabelas normalizadas, PKs, FKs, `CHECK`, índices e triggers de auditoria (`worker/migrations/0001_init.sql`)
+- [x] Banco D1 com tabelas normalizadas, PKs, FKs, `CHECK`, índices e triggers de auditoria (`worker/migrations/`)
 - [x] API REST completa em Cloudflare Workers com autenticação por API Key e CORS (`worker/src/`, documentada em `worker/API.md`)
-- [x] Interface de cadastro: cartões (Bradesco/Nubank), funcionária + VT automático, controle de adiantamentos, despesas fixas com tipos dinâmicos
+- [x] Interface de cadastro: cartões (Bradesco/Nubank), despesas fixas com tipos dinâmicos, consulta/edição de lançamentos
 - [x] Fluxo de conflito (atualizar/manter) e modal de confirmação antes de todo lançamento
-- [x] Dashboard com os 2 cards, gráfico de barras Jan-Dez (Chart.js), filtro por ano, última atualização
-- [x] Testado de ponta a ponta: API real (`wrangler dev` + D1 local, 23 testes) e interface real em navegador (Chrome headless, 21 testes) — 3 bugs encontrados nesse processo e corrigidos (auditoria duplicada, modal travando, select de ano resetando)
+- [x] Dashboard com os 2 cards, 2 gráficos de barras Jan-Dez (Chart.js), filtro por ano, última atualização
+- [x] Testado de ponta a ponta em todas as etapas: API real (`wrangler dev` + D1 local) e interface real em navegador (Chrome headless)
 - [x] `wrangler.toml`, migrations e `.gitignore` prontos para deploy
 - [x] README com instalação, configuração do D1/Workers e publicação no GitHub Pages
 

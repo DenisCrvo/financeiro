@@ -19,33 +19,6 @@ Requisições sem token válido recebem `401 Não autorizado`.
 | PUT | `/api/credit-cards/:id` | Atualiza valor `{value}` (move valor atual para `previous_value`) |
 | DELETE | `/api/credit-cards/:id` | Remove lançamento |
 
-## Funcionária (mensal)
-
-| Método | Rota | Descrição |
-|---|---|---|
-| GET | `/api/employee?year=2026` | Lista lançamentos mensais |
-| GET | `/api/employee/check?year=2026&month=7` | Verifica se já existe lançamento no mês |
-| GET | `/api/employee/:id` | Busca um lançamento específico |
-| POST | `/api/employee` | Cria lançamento `{year, month, days_worked, daily_transport_value, transport_value, vacation_value?, thirteenth_value?, advance_discount_value?, advance_discount_months?, esocial_value?}` |
-| PUT | `/api/employee/:id` | Atualiza campos (parcial) |
-| DELETE | `/api/employee/:id` | Remove lançamento |
-
-## Adiantamentos
-
-Cronograma de desconto de adiantamento (empréstimo) à funcionária — mesmo
-formato de lançamento em lote de Despesas Fixas (ano + meses). **Uso
-exclusivo para controle de desconto em folha/e-social: estes valores nunca
-entram nos totais do Dashboard.**
-
-| Método | Rota | Descrição |
-|---|---|---|
-| GET | `/api/advances?year=2026` | Lista parcelas agendadas (filtro por ano) |
-| GET | `/api/advances/summary?year=2026` | `{total_borrowed, total_discounted, total_remaining}` — descontado = parcelas com mês/ano já alcançado; restante = parcelas futuras |
-| GET | `/api/advances/:id` | Busca uma parcela específica |
-| POST | `/api/advances` | Cria em lote `{value, year, months: [7,8,9]}` — uma parcela por mês, mesmo valor em cada |
-| PUT | `/api/advances/:id` | Atualiza `{discount_value}` de uma parcela |
-| DELETE | `/api/advances/:id` | Remove uma parcela do cronograma |
-
 ## Tipos de Despesa
 
 | Método | Rota | Descrição |
@@ -72,14 +45,11 @@ entram nos totais do Dashboard.**
 | GET | `/api/dashboard?year=2026` | Cards e totais mensais (Jan-Dez) para o gráfico — cada item de `monthly_totals` inclui `total` (geral) e `cards_total` (só Bradesco+Nubank) |
 | GET | `/api/dashboard/last-update` | Timestamp do último registro alterado no banco |
 
-## Histórico (audit log)
-
-Alimentado automaticamente pelos triggers do banco a cada INSERT/UPDATE/DELETE
-nas tabelas de lançamento.
-
-| Método | Rota | Descrição |
-|---|---|---|
-| GET | `/api/audit-log?table=credit_cards&operation=UPDATE&year=2026&month=7&limit=200` | Lista o histórico, todos os filtros são opcionais. `table`: `credit_cards`\|`employee_monthly`\|`employee_advances`\|`fixed_expenses`. `operation`: `INSERT`\|`UPDATE`\|`DELETE`. `year`/`month`: baseados em `changed_at` (quando a alteração foi registrada, não necessariamente o ano/mês do lançamento). `limit`: máx. 500 (padrão 200). Ordenado do mais recente para o mais antigo |
+> **Histórico de alterações:** a tabela `audit_log` continua sendo alimentada
+> automaticamente por triggers a cada INSERT/UPDATE/DELETE em `credit_cards` e
+> `fixed_expenses`, mas não há endpoint de API para consultá-la — é uma tabela
+> de auditoria interna do banco (pode ser consultada via `wrangler d1 execute`
+> se necessário).
 
 ### Exemplo de resposta — `GET /api/dashboard?year=2026`
 ```json

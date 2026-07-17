@@ -3,26 +3,15 @@
 
 import { errorResponse, corsHeaders, HttpError } from './utils.js';
 import * as creditCards from './routes/creditCards.js';
-import * as employee from './routes/employee.js';
-import * as advances from './routes/advances.js';
 import * as expenseTypes from './routes/expenseTypes.js';
 import * as fixedExpenses from './routes/fixedExpenses.js';
 import * as dashboard from './routes/dashboard.js';
-import * as auditLog from './routes/auditLog.js';
 
 // Rotas estáticas (sem :id) — avaliadas antes das rotas com parâmetro.
 const STATIC_ROUTES = [
   { method: 'GET', path: '/api/credit-cards', handler: creditCards.listCreditCards },
   { method: 'GET', path: '/api/credit-cards/check', handler: creditCards.checkCreditCard },
   { method: 'POST', path: '/api/credit-cards', handler: creditCards.createCreditCard },
-
-  { method: 'GET', path: '/api/employee', handler: employee.listEmployeeMonthly },
-  { method: 'GET', path: '/api/employee/check', handler: employee.checkEmployeeMonthly },
-  { method: 'POST', path: '/api/employee', handler: employee.createEmployeeMonthly },
-
-  { method: 'GET', path: '/api/advances', handler: advances.listAdvances },
-  { method: 'GET', path: '/api/advances/summary', handler: advances.advancesSummary },
-  { method: 'POST', path: '/api/advances', handler: advances.createAdvance },
 
   { method: 'GET', path: '/api/expense-types', handler: expenseTypes.listExpenseTypes },
   { method: 'POST', path: '/api/expense-types', handler: expenseTypes.createExpenseType },
@@ -32,15 +21,11 @@ const STATIC_ROUTES = [
 
   { method: 'GET', path: '/api/dashboard', handler: dashboard.getDashboard },
   { method: 'GET', path: '/api/dashboard/last-update', handler: dashboard.getLastUpdate },
-
-  { method: 'GET', path: '/api/audit-log', handler: auditLog.listAuditLog },
 ];
 
 // Rotas com :id — prefixo + handlers por método.
 const ID_ROUTES = [
   { prefix: '/api/credit-cards/', handlers: { GET: creditCards.getCreditCard, PUT: creditCards.updateCreditCard, DELETE: creditCards.deleteCreditCard } },
-  { prefix: '/api/employee/', handlers: { GET: employee.getEmployeeMonthly, PUT: employee.updateEmployeeMonthly, DELETE: employee.deleteEmployeeMonthly } },
-  { prefix: '/api/advances/', handlers: { GET: advances.getAdvance, PUT: advances.updateAdvance, DELETE: advances.deleteAdvance } },
   { prefix: '/api/expense-types/', handlers: { PUT: expenseTypes.updateExpenseType, DELETE: expenseTypes.deleteExpenseType } },
   { prefix: '/api/fixed-expenses/', handlers: { GET: fixedExpenses.getFixedExpense, PUT: fixedExpenses.updateFixedExpense, DELETE: fixedExpenses.deleteFixedExpense } },
 ];

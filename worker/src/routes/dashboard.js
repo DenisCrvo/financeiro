@@ -23,16 +23,11 @@ async function sumCards(env, year, month) {
 }
 
 async function sumOtherExpenses(env, year, month) {
-  const employeeRow = await env.DB.prepare(
-    `SELECT COALESCE(SUM(transport_value + vacation_value + thirteenth_value + esocial_value), 0) AS total
-     FROM employee_monthly WHERE year = ? AND month = ?`
-  ).bind(year, month).first();
-
   const fixedRow = await env.DB.prepare(
     'SELECT COALESCE(SUM(value), 0) AS total FROM fixed_expenses WHERE year = ? AND month = ?'
   ).bind(year, month).first();
 
-  return employeeRow.total + fixedRow.total;
+  return fixedRow.total;
 }
 
 export async function getDashboard(request, env, url) {
@@ -63,7 +58,7 @@ export async function getDashboard(request, env, url) {
 }
 
 export async function getLastUpdate(request, env) {
-  const tables = ['credit_cards', 'employee_monthly', 'employee_advances', 'fixed_expenses'];
+  const tables = ['credit_cards', 'fixed_expenses'];
   const timestamps = [];
   for (const table of tables) {
     const row = await env.DB.prepare(`SELECT MAX(updated_at) AS last FROM ${table}`).first();

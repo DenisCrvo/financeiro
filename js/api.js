@@ -59,26 +59,6 @@ export const creditCardsApi = {
   remove: (id) => request(`/api/credit-cards/${id}`, { method: 'DELETE' }),
 };
 
-export const employeeApi = {
-  list: (year) => request(`/api/employee${qs({ year })}`),
-  check: (year, month) => request(`/api/employee/check${qs({ year, month })}`),
-  getById: (id) => request(`/api/employee/${id}`),
-  create: (data) => request('/api/employee', { method: 'POST', body: data }),
-  update: (id, data) => request(`/api/employee/${id}`, { method: 'PUT', body: data }),
-  remove: (id) => request(`/api/employee/${id}`, { method: 'DELETE' }),
-};
-
-// Cronograma de desconto de adiantamento — controle de folha/e-social,
-// nunca contabilizado nos totais do Dashboard.
-export const advancesApi = {
-  list: (year) => request(`/api/advances${qs({ year })}`),
-  summary: (year) => request(`/api/advances/summary${qs({ year })}`),
-  getById: (id) => request(`/api/advances/${id}`),
-  create: (data) => request('/api/advances', { method: 'POST', body: data }),
-  update: (id, data) => request(`/api/advances/${id}`, { method: 'PUT', body: data }),
-  remove: (id) => request(`/api/advances/${id}`, { method: 'DELETE' }),
-};
-
 export const expenseTypesApi = {
   list: () => request('/api/expense-types'),
   create: (data) => request('/api/expense-types', { method: 'POST', body: data }),
@@ -97,9 +77,4 @@ export const fixedExpensesApi = {
 export const dashboardApi = {
   get: (year) => request(`/api/dashboard${qs({ year })}`),
   lastUpdate: () => request('/api/dashboard/last-update'),
-};
-
-export const auditLogApi = {
-  list: ({ table, operation, year, month, limit } = {}) =>
-    request(`/api/audit-log${qs({ table, operation, year, month, limit })}`),
 };
