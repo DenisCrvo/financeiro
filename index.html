@@ -142,27 +142,28 @@
   <section class="card shadow-sm mb-4">
     <div class="card-header bg-white">
       <h2 class="h5 mb-1"><i class="bi bi-person-vcard text-primary me-2"></i>Funcionária — Pagamento Mensal</h2>
-      <p class="text-secondary small mb-0">Registre o pagamento da funcionária (salário + Vale-Transporte), podendo selecionar vários meses de uma vez.</p>
+      <p class="text-secondary small mb-0">Registre o pagamento de Vale-Transporte da funcionária, podendo selecionar vários meses de uma vez.</p>
     </div>
     <div class="card-body">
       <form data-form="funcionaria-payment" novalidate>
         <div class="row g-3 mb-3">
           <div class="col-md-5">
-            <label class="form-label small">Nome <span class="text-secondary">(opcional)</span></label>
-            <input type="text" class="form-control" data-field="nome" maxlength="120" placeholder="Nome da funcionária">
+            <label class="form-label small">Tipo da despesa</label>
+            <div class="input-group">
+              <select class="form-select" data-field="expense_type_id" required></select>
+              <button type="button" class="btn btn-outline-primary" data-action="new-expense-type">
+                <i class="bi bi-plus-lg me-1"></i>Nova despesa
+              </button>
+              <button type="button" class="btn btn-outline-secondary" data-action="manage-expense-types" title="Gerenciar tipos">
+                <i class="bi bi-sliders"></i>
+              </button>
+            </div>
           </div>
           <div class="col-md-2 col-6">
             <label class="form-label small">Ano</label>
             <select class="form-select" data-field="year" required></select>
           </div>
-          <div class="col-md-3 col-6">
-            <label class="form-label small">Salário</label>
-            <div class="input-group">
-              <span class="input-group-text">R$</span>
-              <input type="text" class="form-control" data-field="salario" placeholder="0,00" inputmode="decimal" required>
-            </div>
-          </div>
-          <div class="col-md-2">
+          <div class="col-md-5">
             <label class="form-label small">Descrição <span class="text-secondary">(opcional)</span></label>
             <input type="text" class="form-control" data-field="description" maxlength="120">
           </div>
@@ -170,25 +171,18 @@
 
         <p class="text-secondary small mb-2">Vale-Transporte (Lei 7.418/1985):</p>
         <div class="row g-3 mb-3">
-          <div class="col-md-3 col-6">
+          <div class="col-md-4 col-6">
             <label class="form-label small">Dias úteis trabalhados</label>
             <input type="number" min="0" class="form-control" data-field="dias_uteis">
           </div>
-          <div class="col-md-3 col-6">
+          <div class="col-md-4 col-6">
             <label class="form-label small">Valor passagem/dia (ida+volta)</label>
             <div class="input-group">
               <span class="input-group-text">R$</span>
               <input type="text" class="form-control" data-field="valor_passagem_dia" placeholder="0,00" inputmode="decimal">
             </div>
           </div>
-          <div class="col-md-3 col-6">
-            <label class="form-label small">Valor do Vale-Transporte</label>
-            <div class="input-group">
-              <span class="input-group-text">R$</span>
-              <input type="text" class="form-control bg-light" data-display="valor-vt" value="0,00" readonly tabindex="-1">
-            </div>
-          </div>
-          <div class="col-md-3 col-6">
+          <div class="col-md-4 col-6">
             <label class="form-label small fw-semibold">Valor Total a Pagar</label>
             <div class="input-group">
               <span class="input-group-text">R$</span>

@@ -236,63 +236,87 @@ async function handleFixedExpenseSubmit(e, form, typeSelect, monthsContainer) {
 }
 
 // ---------------------------------------------------------------------------
-// Funcionária — Pagamento Mensal (salário + Vale-Transporte)
+// Funcionária — Pagamento Mensal (Vale-Transporte)
 // ---------------------------------------------------------------------------
 
 function initFuncionariaPaymentSection() {
   const form = document.querySelector('[data-form="funcionaria-payment"]');
   if (!form) return;
 
+  const typeSelect = form.querySelector('[data-field="expense_type_id"]');
   const yearSelect = form.querySelector('[data-field="year"]');
-  const salarioInput = form.querySelector('[data-field="salario"]');
   const valorPassagemInput = form.querySelector('[data-field="valor_passagem_dia"]');
   const diasUteisInput = form.querySelector('[data-field="dias_uteis"]');
   const monthsContainer = form.querySelector('[data-months-checkboxes]');
 
   populateYearSelect(yearSelect);
-  attachCurrencyMask(salarioInput);
   attachCurrencyMask(valorPassagemInput);
   renderMonthCheckboxes(monthsContainer, 'fp-month');
+  loadExpenseTypesIntoSelect(typeSelect).catch((err) => showToast(err.message, 'error'));
+
+  form.querySelector('[data-action="new-expense-type"]').addEventListener('click', async () => {
+    const name = await newExpenseTypeModal();
+    if (!name) return;
+    try {
+      const created = await expenseTypesApi.create({ name });
+      await loadExpenseTypesIntoSelect(typeSelect);
+      typeSelect.value = String(created.id);
+      showToast('Tipo de despesa cadastrado com sucesso.', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  });
+
+  form.querySelector('[data-action="manage-expense-types"]').addEventListener('click', async () => {
+    let types;
+    try {
+      types = await expenseTypesApi.list();
+    } catch (err) {
+      showToast(err.message, 'error');
+      return;
+    }
+    await manageExpenseTypesModal(types, {
+      onRename: (id, name) => expenseTypesApi.update(id, { name }),
+      onDelete: (id) => expenseTypesApi.remove(id),
+    });
+    await loadExpenseTypesIntoSelect(typeSelect);
+  });
 
   const updateVtPreview = () => {
-    const { valorVt, valorTotal } = calcularValeTransporte({
+    const { valorVt } = calcularValeTransporte({
       diasUteis: Number(diasUteisInput.value) || 0,
       valorPassagemDia: getCurrencyInputValue(valorPassagemInput),
-      salario: getCurrencyInputValue(salarioInput),
     });
-    form.querySelector('[data-display="valor-vt"]').value = formatCurrencyBRL(valorVt).replace('R$', '').trim();
-    form.querySelector('[data-display="valor-total"]').value = formatCurrencyBRL(valorTotal).replace('R$', '').trim();
+    form.querySelector('[data-display="valor-total"]').value = formatCurrencyBRL(valorVt).replace('R$', '').trim();
   };
-  [salarioInput, valorPassagemInput, diasUteisInput].forEach((input) => {
+  [valorPassagemInput, diasUteisInput].forEach((input) => {
     input.addEventListener('input', updateVtPreview);
   });
 
-  form.addEventListener('submit', (e) => handleFuncionariaPaymentSubmit(e, form, monthsContainer, updateVtPreview));
+  form.addEventListener('submit', (e) => handleFuncionariaPaymentSubmit(e, form, typeSelect, monthsContainer, updateVtPreview));
 }
 
-async function handleFuncionariaPaymentSubmit(e, form, monthsContainer, updateVtPreview) {
+async function handleFuncionariaPaymentSubmit(e, form, typeSelect, monthsContainer, updateVtPreview) {
   e.preventDefault();
-  const nome = form.querySelector('[data-field="nome"]').value.trim();
+  const expenseTypeId = typeSelect.value;
   const year = Number(form.querySelector('[data-field="year"]').value);
-  const salario = getCurrencyInputValue(form.querySelector('[data-field="salario"]'));
   const diasUteis = Number(form.querySelector('[data-field="dias_uteis"]').value) || 0;
   const valorPassagemDia = getCurrencyInputValue(form.querySelector('[data-field="valor_passagem_dia"]'));
   const description = form.querySelector('[data-field="description"]').value.trim();
   const months = Array.from(monthsContainer.querySelectorAll('input:checked')).map((cb) => Number(cb.value));
 
-  const errors = validateFuncionariaPaymentForm({ year, months, salario });
+  const errors = validateFuncionariaPaymentForm({ expense_type_id: expenseTypeId, year, months });
   if (errors.length) { showToast(errors[0], 'warning'); return; }
 
-  const { valorVt, valorTotal } = calcularValeTransporte({ diasUteis, valorPassagemDia, salario });
+  const { valorVt } = calcularValeTransporte({ diasUteis, valorPassagemDia });
+  const typeLabel = typeSelect.options[typeSelect.selectedIndex]?.textContent ?? '';
   const monthsLabel = months.map((m) => monthName(m)).join(', ');
 
   const confirmed = await confirmModal({
     title: 'Confirmar pagamento à funcionária?',
     rows: [
-      ['Nome', nome || '—'], ['Ano', String(year)], ['Meses', monthsLabel],
-      ['Salário (por mês)', formatCurrencyBRL(salario)],
-      ['Vale-Transporte (por mês)', formatCurrencyBRL(valorVt)],
-      ['Total a pagar (por mês)', formatCurrencyBRL(valorTotal)],
+      ['Tipo de despesa', typeLabel], ['Ano', String(year)], ['Meses', monthsLabel],
+      ['Valor Total a Pagar (por mês)', formatCurrencyBRL(valorVt)],
       ['Descrição', description || '—'],
     ],
   });
@@ -300,7 +324,7 @@ async function handleFuncionariaPaymentSubmit(e, form, monthsContainer, updateVt
 
   try {
     await funcionariaPaymentsApi.create({
-      nome: nome || null, year, months, salario,
+      expense_type_id: Number(expenseTypeId), year, months,
       dias_uteis: diasUteis, valor_passagem_dia: valorPassagemDia,
       description: description || null,
     });
@@ -336,11 +360,10 @@ function buildEditSpec(tableName, record) {
     return {
       title: 'Editar pagamento à funcionária',
       readOnlyRows: [
-        ['Nome', record.nome ?? '—'],
+        ['Categoria', record.expense_type_name ?? '—'],
         ['Ano', String(record.year)], ['Mês', monthName(record.month)],
       ],
       fields: [
-        { key: 'salario', label: 'Salário', type: 'currency', value: record.salario },
         { key: 'dias_uteis', label: 'Dias úteis trabalhados', type: 'number', value: record.dias_uteis },
         { key: 'valor_passagem_dia', label: 'Valor passagem/dia (ida+volta)', type: 'currency', value: record.valor_passagem_dia },
         { key: 'description', label: 'Descrição', type: 'text', value: record.description },
@@ -365,8 +388,7 @@ function renderQueryRowDetails(tableName, record) {
     return `${CARD_LABELS[record.card_name] ?? record.card_name} — ${formatCurrencyBRL(record.value)}`;
   }
   if (tableName === 'funcionaria_payments') {
-    const nome = record.nome ? `${record.nome} — ` : '';
-    return `${nome}Salário ${formatCurrencyBRL(record.salario)} + VT ${formatCurrencyBRL(record.valor_vt)} = Total ${formatCurrencyBRL(record.valor_total)}`;
+    return `${record.expense_type_name ?? '—'} — Vale-Transporte ${formatCurrencyBRL(record.valor_vt)}`;
   }
   const desc = record.description ? ` — ${record.description}` : '';
   return `${record.expense_type_name ?? '—'} — ${formatCurrencyBRL(record.value)}${desc}`;
