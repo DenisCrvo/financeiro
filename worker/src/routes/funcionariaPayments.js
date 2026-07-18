@@ -1,9 +1,10 @@
 // Rotas: /api/funcionaria-payments
 // Pagamento mensal de Vale-Transporte (Lei 7.418/1985) associado a um tipo
-// de despesa (mesma tabela `expense_types` usada por Despesas Fixas), no
-// mesmo formato de lançamento em lote ("months": [1,2,3] → uma linha por
-// mês, mesmo batch_id). valor_vt = dias_uteis × valor_passagem_dia (a
-// passagem já é o valor de ida+volta).
+// de despesa próprio (`funcionaria_expense_types` — independente do
+// `expense_types` usado por Despesas Fixas), no mesmo formato de
+// lançamento em lote ("months": [1,2,3] → uma linha por mês, mesmo
+// batch_id). valor_vt = dias_uteis × valor_passagem_dia (a passagem já é
+// o valor de ida+volta).
 
 import {
   jsonResponse, errorResponse, parseJsonBody, requireFields,
@@ -19,7 +20,7 @@ export async function listFuncionariaPayments(request, env, url) {
   let query = `
     SELECT fp.*, et.name AS expense_type_name, et.icon AS expense_type_icon
     FROM funcionaria_pagamentos fp
-    JOIN expense_types et ON et.id = fp.expense_type_id
+    JOIN funcionaria_expense_types et ON et.id = fp.expense_type_id
   `;
   const params = [];
   if (year) {
@@ -46,7 +47,7 @@ export async function createFuncionariaPayments(request, env) {
   }
   const months = [...new Set(body.months.map((m) => assertMonth(m)))];
 
-  const typeExists = await env.DB.prepare('SELECT id FROM expense_types WHERE id = ?')
+  const typeExists = await env.DB.prepare('SELECT id FROM funcionaria_expense_types WHERE id = ?')
     .bind(expenseTypeId).first();
   if (!typeExists) throw new HttpError('Tipo de despesa não encontrado.', 422);
 
@@ -80,7 +81,7 @@ export async function createFuncionariaPayments(request, env) {
   const placeholders = created.map(() => '?').join(',');
   const { results } = await env.DB.prepare(
     `SELECT fp.*, et.name AS expense_type_name, et.icon AS expense_type_icon
-     FROM funcionaria_pagamentos fp JOIN expense_types et ON et.id = fp.expense_type_id
+     FROM funcionaria_pagamentos fp JOIN funcionaria_expense_types et ON et.id = fp.expense_type_id
      WHERE fp.id IN (${placeholders})`
   ).bind(...created).all();
 
@@ -90,7 +91,7 @@ export async function createFuncionariaPayments(request, env) {
 export async function getFuncionariaPayment(request, env, id) {
   const record = await env.DB.prepare(
     `SELECT fp.*, et.name AS expense_type_name, et.icon AS expense_type_icon
-     FROM funcionaria_pagamentos fp JOIN expense_types et ON et.id = fp.expense_type_id
+     FROM funcionaria_pagamentos fp JOIN funcionaria_expense_types et ON et.id = fp.expense_type_id
      WHERE fp.id = ?`
   ).bind(id).first();
   if (!record) return errorResponse('Registro não encontrado.', 404);
@@ -118,7 +119,7 @@ export async function updateFuncionariaPayment(request, env, id) {
 
   const updated = await env.DB.prepare(
     `SELECT fp.*, et.name AS expense_type_name, et.icon AS expense_type_icon
-     FROM funcionaria_pagamentos fp JOIN expense_types et ON et.id = fp.expense_type_id
+     FROM funcionaria_pagamentos fp JOIN funcionaria_expense_types et ON et.id = fp.expense_type_id
      WHERE fp.id = ?`
   ).bind(id).first();
   return jsonResponse(updated);

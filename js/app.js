@@ -2,7 +2,8 @@
 // Liga os formulários da interface aos serviços de negócio e à API.
 
 import {
-  creditCardsApi, expenseTypesApi, fixedExpensesApi, funcionariaPaymentsApi,
+  creditCardsApi, expenseTypesApi, fixedExpensesApi,
+  funcionariaExpenseTypesApi, funcionariaPaymentsApi,
 } from './api.js';
 import {
   formatCurrencyBRL, attachCurrencyMask, getCurrencyInputValue,
@@ -146,8 +147,8 @@ function renderMonthCheckboxes(container, idPrefix = 'month') {
   }).join('');
 }
 
-async function loadExpenseTypesIntoSelect(select) {
-  const types = await expenseTypesApi.list();
+async function loadExpenseTypesIntoSelect(select, api = expenseTypesApi) {
+  const types = await api.list();
   const previousValue = select.value;
   select.innerHTML = '<option value="" disabled selected>Selecione...</option>' +
     types.map((t) => `<option value="${t.id}">${t.name}</option>`).join('');
@@ -252,14 +253,14 @@ function initFuncionariaPaymentSection() {
   populateYearSelect(yearSelect);
   attachCurrencyMask(valorPassagemInput);
   renderMonthCheckboxes(monthsContainer, 'fp-month');
-  loadExpenseTypesIntoSelect(typeSelect).catch((err) => showToast(err.message, 'error'));
+  loadExpenseTypesIntoSelect(typeSelect, funcionariaExpenseTypesApi).catch((err) => showToast(err.message, 'error'));
 
   form.querySelector('[data-action="new-expense-type"]').addEventListener('click', async () => {
     const name = await newExpenseTypeModal();
     if (!name) return;
     try {
-      const created = await expenseTypesApi.create({ name });
-      await loadExpenseTypesIntoSelect(typeSelect);
+      const created = await funcionariaExpenseTypesApi.create({ name });
+      await loadExpenseTypesIntoSelect(typeSelect, funcionariaExpenseTypesApi);
       typeSelect.value = String(created.id);
       showToast('Tipo de despesa cadastrado com sucesso.', 'success');
     } catch (err) {
@@ -270,16 +271,16 @@ function initFuncionariaPaymentSection() {
   form.querySelector('[data-action="manage-expense-types"]').addEventListener('click', async () => {
     let types;
     try {
-      types = await expenseTypesApi.list();
+      types = await funcionariaExpenseTypesApi.list();
     } catch (err) {
       showToast(err.message, 'error');
       return;
     }
     await manageExpenseTypesModal(types, {
-      onRename: (id, name) => expenseTypesApi.update(id, { name }),
-      onDelete: (id) => expenseTypesApi.remove(id),
+      onRename: (id, name) => funcionariaExpenseTypesApi.update(id, { name }),
+      onDelete: (id) => funcionariaExpenseTypesApi.remove(id),
     });
-    await loadExpenseTypesIntoSelect(typeSelect);
+    await loadExpenseTypesIntoSelect(typeSelect, funcionariaExpenseTypesApi);
   });
 
   const updateVtPreview = () => {

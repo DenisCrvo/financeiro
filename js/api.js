@@ -74,6 +74,13 @@ export const fixedExpensesApi = {
   remove: (id) => request(`/api/fixed-expenses/${id}`, { method: 'DELETE' }),
 };
 
+export const funcionariaExpenseTypesApi = {
+  list: () => request('/api/funcionaria-expense-types'),
+  create: (data) => request('/api/funcionaria-expense-types', { method: 'POST', body: data }),
+  update: (id, data) => request(`/api/funcionaria-expense-types/${id}`, { method: 'PUT', body: data }),
+  remove: (id) => request(`/api/funcionaria-expense-types/${id}`, { method: 'DELETE' }),
+};
+
 export const funcionariaPaymentsApi = {
   list: (year) => request(`/api/funcionaria-payments${qs({ year })}`),
   getById: (id) => request(`/api/funcionaria-payments/${id}`),

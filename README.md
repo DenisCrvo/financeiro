@@ -166,9 +166,10 @@ publicar**.
   **Manter lançamento anterior**.
 - Despesas fixas podem ser lançadas em vários meses de uma vez, com o mesmo valor.
 - **Funcionária — Pagamento Mensal**: lançamento de Vale-Transporte (Lei
-  7.418/1985) categorizado pelo mesmo Tipo de Despesa de Despesas Fixas,
-  também em lote por vários meses, com o valor total a pagar (dias úteis
-  × valor da passagem ida+volta) calculado e persistido no servidor.
+  7.418/1985) categorizado por Tipo de Despesa própria (lista
+  independente da de Despesas Fixas), também em lote por vários meses,
+  com o valor total a pagar (dias úteis × valor da passagem ida+volta)
+  calculado e persistido no servidor.
 - Todo lançamento passa por um modal de confirmação com o resumo antes de gravar.
 - A tela de Cadastro tem uma área de **Consultar e Editar Lançamentos**, com
   filtros por tipo/ano/mês e ações de editar/excluir sobre os registros já

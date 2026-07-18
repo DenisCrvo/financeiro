@@ -40,11 +40,25 @@ Requisições sem token válido recebem `401 Não autorizado`.
 
 ## Funcionária — Pagamento Mensal
 
-Pagamento mensal de Vale-Transporte (Lei 7.418/1985), categorizado pelo
-mesmo `expense_type_id` usado em Despesas Fixas (`expense_types`) — sem
-cadastro de RH nem cálculo de tributos/encargos. `valor_vt = dias_uteis ×
+Pagamento mensal de Vale-Transporte (Lei 7.418/1985) — sem cadastro de RH
+nem cálculo de tributos/encargos. `valor_vt = dias_uteis ×
 valor_passagem_dia` (a passagem já é o valor de ida+volta), calculado e
 persistido no servidor (o frontend só faz uma pré-visualização).
+
+### Tipos de Despesa da Funcionária
+
+Taxonomia própria (`funcionaria_expense_types`), **independente** de
+`expense_types` (usado por Despesas Fixas) — as duas listas não se
+misturam.
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/api/funcionaria-expense-types` | Lista tipos cadastrados |
+| POST | `/api/funcionaria-expense-types` | Cria `{name, icon?}`. Retorna 409 se já existir |
+| PUT | `/api/funcionaria-expense-types/:id` | Renomeia `{name, icon?}`. Retorna 409 se o novo nome já existir em outro tipo |
+| DELETE | `/api/funcionaria-expense-types/:id` | Remove (bloqueado se houver pagamentos associados) |
+
+### Pagamentos
 
 | Método | Rota | Descrição |
 |---|---|---|
