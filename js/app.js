@@ -2,7 +2,7 @@
 // Liga os formulários da interface aos serviços de negócio e à API.
 
 import {
-  creditCardsApi, expenseTypesApi, fixedExpensesApi,
+  creditCardsApi, expenseTypesApi, fixedExpensesApi, funcionariaPaymentsApi,
 } from './api.js';
 import {
   formatCurrencyBRL, attachCurrencyMask, getCurrencyInputValue,
@@ -12,13 +12,17 @@ import { showToast } from '../components/toast.js';
 import {
   confirmModal, newExpenseTypeModal, manageExpenseTypesModal, editRecordModal,
 } from '../components/modal.js';
-import { validateCreditCardForm, validateFixedExpenseForm } from '../services/financeiroService.js';
+import {
+  validateCreditCardForm, validateFixedExpenseForm,
+  validateFuncionariaPaymentForm, calcularValeTransporte,
+} from '../services/financeiroService.js';
 
 const CARD_LABELS = { bradesco: 'Bradesco', nubank: 'Nubank' };
 
 document.addEventListener('DOMContentLoaded', () => {
   initCreditCardsSection();
   initFixedExpensesSection();
+  initFuncionariaPaymentSection();
   initQuerySection();
 });
 
@@ -232,10 +236,90 @@ async function handleFixedExpenseSubmit(e, form, typeSelect, monthsContainer) {
 }
 
 // ---------------------------------------------------------------------------
+// Funcionária — Pagamento Mensal (salário + Vale-Transporte)
+// ---------------------------------------------------------------------------
+
+function initFuncionariaPaymentSection() {
+  const form = document.querySelector('[data-form="funcionaria-payment"]');
+  if (!form) return;
+
+  const yearSelect = form.querySelector('[data-field="year"]');
+  const salarioInput = form.querySelector('[data-field="salario"]');
+  const valorPassagemInput = form.querySelector('[data-field="valor_passagem_dia"]');
+  const diasUteisInput = form.querySelector('[data-field="dias_uteis"]');
+  const monthsContainer = form.querySelector('[data-months-checkboxes]');
+
+  populateYearSelect(yearSelect);
+  attachCurrencyMask(salarioInput);
+  attachCurrencyMask(valorPassagemInput);
+  renderMonthCheckboxes(monthsContainer, 'fp-month');
+
+  const updateVtPreview = () => {
+    const { valorVt, valorTotal } = calcularValeTransporte({
+      diasUteis: Number(diasUteisInput.value) || 0,
+      valorPassagemDia: getCurrencyInputValue(valorPassagemInput),
+      salario: getCurrencyInputValue(salarioInput),
+    });
+    form.querySelector('[data-display="valor-vt"]').value = formatCurrencyBRL(valorVt).replace('R$', '').trim();
+    form.querySelector('[data-display="valor-total"]').value = formatCurrencyBRL(valorTotal).replace('R$', '').trim();
+  };
+  [salarioInput, valorPassagemInput, diasUteisInput].forEach((input) => {
+    input.addEventListener('input', updateVtPreview);
+  });
+
+  form.addEventListener('submit', (e) => handleFuncionariaPaymentSubmit(e, form, monthsContainer, updateVtPreview));
+}
+
+async function handleFuncionariaPaymentSubmit(e, form, monthsContainer, updateVtPreview) {
+  e.preventDefault();
+  const nome = form.querySelector('[data-field="nome"]').value.trim();
+  const year = Number(form.querySelector('[data-field="year"]').value);
+  const salario = getCurrencyInputValue(form.querySelector('[data-field="salario"]'));
+  const diasUteis = Number(form.querySelector('[data-field="dias_uteis"]').value) || 0;
+  const valorPassagemDia = getCurrencyInputValue(form.querySelector('[data-field="valor_passagem_dia"]'));
+  const description = form.querySelector('[data-field="description"]').value.trim();
+  const months = Array.from(monthsContainer.querySelectorAll('input:checked')).map((cb) => Number(cb.value));
+
+  const errors = validateFuncionariaPaymentForm({ year, months, salario });
+  if (errors.length) { showToast(errors[0], 'warning'); return; }
+
+  const { valorVt, valorTotal } = calcularValeTransporte({ diasUteis, valorPassagemDia, salario });
+  const monthsLabel = months.map((m) => monthName(m)).join(', ');
+
+  const confirmed = await confirmModal({
+    title: 'Confirmar pagamento à funcionária?',
+    rows: [
+      ['Nome', nome || '—'], ['Ano', String(year)], ['Meses', monthsLabel],
+      ['Salário (por mês)', formatCurrencyBRL(salario)],
+      ['Vale-Transporte (por mês)', formatCurrencyBRL(valorVt)],
+      ['Total a pagar (por mês)', formatCurrencyBRL(valorTotal)],
+      ['Descrição', description || '—'],
+    ],
+  });
+  if (!confirmed) return;
+
+  try {
+    await funcionariaPaymentsApi.create({
+      nome: nome || null, year, months, salario,
+      dias_uteis: diasUteis, valor_passagem_dia: valorPassagemDia,
+      description: description || null,
+    });
+    showToast('Pagamento lançado com sucesso.', 'success');
+    form.reset();
+    renderMonthCheckboxes(monthsContainer, 'fp-month');
+    populateYearSelect(form.querySelector('[data-field="year"]'));
+    updateVtPreview();
+    refreshQueryResults();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Consultar e Editar Lançamentos
 // ---------------------------------------------------------------------------
 
-const TABLE_LABELS = { credit_cards: 'Cartão de Crédito', fixed_expenses: 'Despesa Fixa' };
+const TABLE_LABELS = { credit_cards: 'Cartão de Crédito', fixed_expenses: 'Despesa Fixa', funcionaria_payments: 'Funcionária' };
 
 function buildEditSpec(tableName, record) {
   if (tableName === 'credit_cards') {
@@ -246,6 +330,21 @@ function buildEditSpec(tableName, record) {
         ['Ano', String(record.year)], ['Mês', monthName(record.month)],
       ],
       fields: [{ key: 'value', label: 'Valor da fatura', type: 'currency', value: record.value }],
+    };
+  }
+  if (tableName === 'funcionaria_payments') {
+    return {
+      title: 'Editar pagamento à funcionária',
+      readOnlyRows: [
+        ['Nome', record.nome ?? '—'],
+        ['Ano', String(record.year)], ['Mês', monthName(record.month)],
+      ],
+      fields: [
+        { key: 'salario', label: 'Salário', type: 'currency', value: record.salario },
+        { key: 'dias_uteis', label: 'Dias úteis trabalhados', type: 'number', value: record.dias_uteis },
+        { key: 'valor_passagem_dia', label: 'Valor passagem/dia (ida+volta)', type: 'currency', value: record.valor_passagem_dia },
+        { key: 'description', label: 'Descrição', type: 'text', value: record.description },
+      ],
     };
   }
   return {
@@ -264,6 +363,10 @@ function buildEditSpec(tableName, record) {
 function renderQueryRowDetails(tableName, record) {
   if (tableName === 'credit_cards') {
     return `${CARD_LABELS[record.card_name] ?? record.card_name} — ${formatCurrencyBRL(record.value)}`;
+  }
+  if (tableName === 'funcionaria_payments') {
+    const nome = record.nome ? `${record.nome} — ` : '';
+    return `${nome}Salário ${formatCurrencyBRL(record.salario)} + VT ${formatCurrencyBRL(record.valor_vt)} = Total ${formatCurrencyBRL(record.valor_total)}`;
   }
   const desc = record.description ? ` — ${record.description}` : '';
   return `${record.expense_type_name ?? '—'} — ${formatCurrencyBRL(record.value)}${desc}`;
@@ -308,14 +411,16 @@ async function refreshQueryResults() {
   const month = document.querySelector('[data-query-filter="month"]').value;
 
   try {
-    const [cards, fixed] = await Promise.all([
+    const [cards, fixed, funcionaria] = await Promise.all([
       tableFilter && tableFilter !== 'credit_cards' ? [] : creditCardsApi.list(year),
       tableFilter && tableFilter !== 'fixed_expenses' ? [] : fixedExpensesApi.list(year),
+      tableFilter && tableFilter !== 'funcionaria_payments' ? [] : funcionariaPaymentsApi.list(year),
     ]);
 
     let records = [
       ...cards.map((r) => ({ table_name: 'credit_cards', record: r })),
       ...fixed.map((r) => ({ table_name: 'fixed_expenses', record: r })),
+      ...funcionaria.map((r) => ({ table_name: 'funcionaria_payments', record: r })),
     ];
 
     if (month) {
@@ -353,7 +458,7 @@ async function refreshQueryResults() {
   }
 }
 
-const QUERY_API = { credit_cards: creditCardsApi, fixed_expenses: fixedExpensesApi };
+const QUERY_API = { credit_cards: creditCardsApi, fixed_expenses: fixedExpensesApi, funcionaria_payments: funcionariaPaymentsApi };
 
 async function handleEditQueryRecord(tableName, recordId) {
   const api = QUERY_API[tableName];

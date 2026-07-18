@@ -5,6 +5,7 @@ import { errorResponse, corsHeaders, HttpError } from './utils.js';
 import * as creditCards from './routes/creditCards.js';
 import * as expenseTypes from './routes/expenseTypes.js';
 import * as fixedExpenses from './routes/fixedExpenses.js';
+import * as funcionariaPayments from './routes/funcionariaPayments.js';
 import * as dashboard from './routes/dashboard.js';
 
 // Rotas estáticas (sem :id) — avaliadas antes das rotas com parâmetro.
@@ -19,6 +20,9 @@ const STATIC_ROUTES = [
   { method: 'GET', path: '/api/fixed-expenses', handler: fixedExpenses.listFixedExpenses },
   { method: 'POST', path: '/api/fixed-expenses', handler: fixedExpenses.createFixedExpenses },
 
+  { method: 'GET', path: '/api/funcionaria-payments', handler: funcionariaPayments.listFuncionariaPayments },
+  { method: 'POST', path: '/api/funcionaria-payments', handler: funcionariaPayments.createFuncionariaPayments },
+
   { method: 'GET', path: '/api/dashboard', handler: dashboard.getDashboard },
   { method: 'GET', path: '/api/dashboard/last-update', handler: dashboard.getLastUpdate },
 ];
@@ -28,6 +32,7 @@ const ID_ROUTES = [
   { prefix: '/api/credit-cards/', handlers: { GET: creditCards.getCreditCard, PUT: creditCards.updateCreditCard, DELETE: creditCards.deleteCreditCard } },
   { prefix: '/api/expense-types/', handlers: { PUT: expenseTypes.updateExpenseType, DELETE: expenseTypes.deleteExpenseType } },
   { prefix: '/api/fixed-expenses/', handlers: { GET: fixedExpenses.getFixedExpense, PUT: fixedExpenses.updateFixedExpense, DELETE: fixedExpenses.deleteFixedExpense } },
+  { prefix: '/api/funcionaria-payments/', handlers: { GET: funcionariaPayments.getFuncionariaPayment, PUT: funcionariaPayments.updateFuncionariaPayment, DELETE: funcionariaPayments.deleteFuncionariaPayment } },
 ];
 
 // Rotas de ação — POST /api/<recurso>/:id/<acao>.

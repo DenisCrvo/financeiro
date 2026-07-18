@@ -34,3 +34,21 @@ export function validateFixedExpenseForm({ expense_type_id, year, months, value 
   if (valueError) errors.push(valueError);
   return errors;
 }
+
+// Vale-Transporte (Lei 7.418/1985). `valorPassagemDia` já é o custo de
+// ida+volta informado pelo usuário, então o benefício do dia é só esse
+// valor — o total do mês é dias úteis × valor/dia.
+export function calcularValeTransporte({ diasUteis, valorPassagemDia, salario }) {
+  const valorVt = Math.round((Number(diasUteis) || 0) * (Number(valorPassagemDia) || 0) * 100) / 100;
+  const valorTotal = Math.round(((Number(salario) || 0) + valorVt) * 100) / 100;
+  return { valorVt, valorTotal };
+}
+
+export function validateFuncionariaPaymentForm({ year, months, salario }) {
+  const errors = [];
+  if (validateRequired(year, 'Ano')) errors.push(validateRequired(year, 'Ano'));
+  if (!months || months.length === 0) errors.push('Selecione ao menos um mês.');
+  const valueError = validatePositiveNumber(salario, 'Salário');
+  if (valueError) errors.push(valueError);
+  return errors;
+}

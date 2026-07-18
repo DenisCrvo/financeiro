@@ -38,6 +38,22 @@ Requisições sem token válido recebem `401 Não autorizado`.
 | PUT | `/api/fixed-expenses/:id` | Atualiza `{value, description?}` |
 | DELETE | `/api/fixed-expenses/:id` | Remove lançamento |
 
+## Funcionária — Pagamento Mensal
+
+Pagamento mensal simples (salário + Vale-Transporte), sem cadastro de RH nem
+cálculo de tributos/encargos. Vale-Transporte (Lei 7.418/1985):
+`valor_vt = dias_uteis × valor_passagem_dia` (a passagem já é o valor de
+ida+volta); `valor_total = salario + valor_vt`. Ambos calculados e
+persistidos no servidor (o frontend só faz uma pré-visualização).
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/api/funcionaria-payments?year=2026` | Lista pagamentos (filtro opcional por ano) |
+| GET | `/api/funcionaria-payments/:id` | Busca um pagamento específico |
+| POST | `/api/funcionaria-payments` | Cria em lote `{nome?, year, months: [1,2,3], salario, dias_uteis?, valor_passagem_dia?, description?}` — uma linha por mês. 409 se já existir pagamento no mês |
+| PUT | `/api/funcionaria-payments/:id` | Atualiza `{nome?, salario?, dias_uteis?, valor_passagem_dia?, description?}` (recalcula VT e total) |
+| DELETE | `/api/funcionaria-payments/:id` | Remove lançamento |
+
 ## Dashboard
 
 | Método | Rota | Descrição |
