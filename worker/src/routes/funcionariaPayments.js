@@ -1,19 +1,18 @@
 // Rotas: /api/funcionaria-payments
-// Pagamento mensal de Vale-Transporte (Lei 7.418/1985) associado a um tipo
-// de despesa próprio (`funcionaria_expense_types` — independente do
-// `expense_types` usado por Despesas Fixas), no mesmo formato de
-// lançamento em lote ("months": [1,2,3] → uma linha por mês, mesmo
-// batch_id). valor_vt = dias_uteis × valor_passagem_dia (a passagem já é
-// o valor de ida+volta).
+// Pagamento mensal associado a um tipo de despesa próprio
+// (`funcionaria_expense_types` — independente do `expense_types` usado por
+// Despesas Fixas), no mesmo formato de lançamento em lote ("months":
+// [1,2,3] → uma linha por mês, mesmo batch_id).
+//
+// `valor_pagar` é o valor efetivamente lançado/editável pelo usuário — o
+// cálculo de Vale-Transporte (Lei 7.418/1985: dias_uteis ×
+// valor_passagem_dia) só serve como preenchimento automático no frontend
+// (ponto de partida), não é recalculado/forçado pelo servidor.
 
 import {
   jsonResponse, errorResponse, parseJsonBody, requireFields,
   assertNonNegativeNumber, assertMonth, assertYear, HttpError,
 } from '../utils.js';
-
-function calcularValorVt(diasUteis, valorPassagemDia) {
-  return Math.round(diasUteis * valorPassagemDia * 100) / 100;
-}
 
 export async function listFuncionariaPayments(request, env, url) {
   const year = url.searchParams.get('year');
@@ -34,13 +33,13 @@ export async function listFuncionariaPayments(request, env, url) {
 
 export async function createFuncionariaPayments(request, env) {
   const body = await parseJsonBody(request);
-  requireFields(body, ['expense_type_id', 'year', 'months']);
+  requireFields(body, ['expense_type_id', 'year', 'months', 'valor_pagar']);
 
   const expenseTypeId = Number(body.expense_type_id);
   const year = assertYear(body.year);
+  const valorPagar = assertNonNegativeNumber(body.valor_pagar, 'valor_pagar');
   const diasUteis = body.dias_uteis !== undefined ? assertNonNegativeNumber(body.dias_uteis, 'dias_uteis') : 0;
   const valorPassagemDia = body.valor_passagem_dia !== undefined ? assertNonNegativeNumber(body.valor_passagem_dia, 'valor_passagem_dia') : 0;
-  const description = body.description ? String(body.description).trim() : null;
 
   if (!Array.isArray(body.months) || body.months.length === 0) {
     throw new HttpError('O campo "months" deve ser uma lista com ao menos um mês.', 422);
@@ -50,8 +49,6 @@ export async function createFuncionariaPayments(request, env) {
   const typeExists = await env.DB.prepare('SELECT id FROM funcionaria_expense_types WHERE id = ?')
     .bind(expenseTypeId).first();
   if (!typeExists) throw new HttpError('Tipo de despesa não encontrado.', 422);
-
-  const valorVt = calcularValorVt(diasUteis, valorPassagemDia);
 
   const conflicts = [];
   for (const month of months) {
@@ -72,9 +69,9 @@ export async function createFuncionariaPayments(request, env) {
   for (const month of months) {
     const result = await env.DB.prepare(
       `INSERT INTO funcionaria_pagamentos
-         (expense_type_id, year, month, dias_uteis, valor_passagem_dia, valor_vt, description, batch_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind(expenseTypeId, year, month, diasUteis, valorPassagemDia, valorVt, description, batchId).run();
+         (expense_type_id, year, month, dias_uteis, valor_passagem_dia, valor_pagar, batch_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).bind(expenseTypeId, year, month, diasUteis, valorPassagemDia, valorPagar, batchId).run();
     created.push(result.meta.last_row_id);
   }
 
@@ -104,18 +101,16 @@ export async function updateFuncionariaPayment(request, env, id) {
   const existing = await env.DB.prepare('SELECT * FROM funcionaria_pagamentos WHERE id = ?').bind(id).first();
   if (!existing) return errorResponse('Registro não encontrado.', 404);
 
+  const valorPagar = body.valor_pagar !== undefined ? assertNonNegativeNumber(body.valor_pagar, 'valor_pagar') : existing.valor_pagar;
   const diasUteis = body.dias_uteis !== undefined ? assertNonNegativeNumber(body.dias_uteis, 'dias_uteis') : existing.dias_uteis;
   const valorPassagemDia = body.valor_passagem_dia !== undefined ? assertNonNegativeNumber(body.valor_passagem_dia, 'valor_passagem_dia') : existing.valor_passagem_dia;
-  const description = body.description !== undefined ? (String(body.description).trim() || null) : existing.description;
-
-  const valorVt = calcularValorVt(diasUteis, valorPassagemDia);
 
   await env.DB.prepare(
     `UPDATE funcionaria_pagamentos
-     SET dias_uteis = ?, valor_passagem_dia = ?, valor_vt = ?, description = ?,
+     SET dias_uteis = ?, valor_passagem_dia = ?, valor_pagar = ?,
          updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
      WHERE id = ?`
-  ).bind(diasUteis, valorPassagemDia, valorVt, description, id).run();
+  ).bind(diasUteis, valorPassagemDia, valorPagar, id).run();
 
   const updated = await env.DB.prepare(
     `SELECT fp.*, et.name AS expense_type_name, et.icon AS expense_type_icon

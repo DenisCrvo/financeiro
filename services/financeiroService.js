@@ -43,10 +43,12 @@ export function calcularValeTransporte({ diasUteis, valorPassagemDia }) {
   return { valorVt };
 }
 
-export function validateFuncionariaPaymentForm({ expense_type_id, year, months }) {
+export function validateFuncionariaPaymentForm({ expense_type_id, year, months, valor_pagar }) {
   const errors = [];
   if (validateRequired(expense_type_id, 'Tipo de despesa')) errors.push(validateRequired(expense_type_id, 'Tipo de despesa'));
   if (validateRequired(year, 'Ano')) errors.push(validateRequired(year, 'Ano'));
   if (!months || months.length === 0) errors.push('Selecione ao menos um mês.');
+  const valueError = validatePositiveNumber(valor_pagar, 'Valor a Pagar');
+  if (valueError) errors.push(valueError);
   return errors;
 }

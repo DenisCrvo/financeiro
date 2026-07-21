@@ -165,11 +165,12 @@ publicar**.
   mostra o último valor registrado com as opções **Atualizar valor** /
   **Manter lançamento anterior**.
 - Despesas fixas podem ser lançadas em vários meses de uma vez, com o mesmo valor.
-- **Funcionária — Pagamento Mensal**: lançamento de Vale-Transporte (Lei
-  7.418/1985) categorizado por Tipo de Despesa própria (lista
-  independente da de Despesas Fixas), também em lote por vários meses,
-  com o valor total a pagar (dias úteis × valor da passagem ida+volta)
-  calculado e persistido no servidor.
+- **Funcionária — Pagamento Mensal**: lançamento com valor livre,
+  categorizado por Tipo de Despesa própria (lista independente da de
+  Despesas Fixas), também em lote por vários meses. O cálculo de
+  Vale-Transporte (Lei 7.418/1985: dias úteis × valor da passagem
+  ida+volta) preenche automaticamente o campo de valor, que pode ser
+  ajustado livremente antes de salvar.
 - Todo lançamento passa por um modal de confirmação com o resumo antes de gravar.
 - A tela de Cadastro tem uma área de **Consultar e Editar Lançamentos**, com
   filtros por tipo/ano/mês e ações de editar/excluir sobre os registros já

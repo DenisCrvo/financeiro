@@ -40,10 +40,11 @@ Requisições sem token válido recebem `401 Não autorizado`.
 
 ## Funcionária — Pagamento Mensal
 
-Pagamento mensal de Vale-Transporte (Lei 7.418/1985) — sem cadastro de RH
-nem cálculo de tributos/encargos. `valor_vt = dias_uteis ×
-valor_passagem_dia` (a passagem já é o valor de ida+volta), calculado e
-persistido no servidor (o frontend só faz uma pré-visualização).
+Pagamento mensal com valor de lançamento livre (`valor_pagar`) — sem
+cadastro de RH nem cálculo de tributos/encargos. O cálculo de
+Vale-Transporte (Lei 7.418/1985: `dias_uteis × valor_passagem_dia`) é
+apenas um preenchimento automático no frontend; o servidor grava
+exatamente o `valor_pagar` recebido, sem recalcular ou sobrescrever.
 
 ### Tipos de Despesa da Funcionária
 
@@ -64,8 +65,8 @@ misturam.
 |---|---|---|
 | GET | `/api/funcionaria-payments?year=2026` | Lista pagamentos (com nome/ícone do tipo; filtro opcional por ano) |
 | GET | `/api/funcionaria-payments/:id` | Busca um pagamento específico (com nome/ícone do tipo) |
-| POST | `/api/funcionaria-payments` | Cria em lote `{expense_type_id, year, months: [1,2,3], dias_uteis?, valor_passagem_dia?, description?}` — uma linha por mês. 409 se já existir pagamento deste tipo no mês |
-| PUT | `/api/funcionaria-payments/:id` | Atualiza `{dias_uteis?, valor_passagem_dia?, description?}` (recalcula o Vale-Transporte) |
+| POST | `/api/funcionaria-payments` | Cria em lote `{expense_type_id, year, months: [1,2,3], valor_pagar, dias_uteis?, valor_passagem_dia?}` — uma linha por mês. 409 se já existir pagamento deste tipo no mês |
+| PUT | `/api/funcionaria-payments/:id` | Atualiza `{valor_pagar?, dias_uteis?, valor_passagem_dia?}` |
 | DELETE | `/api/funcionaria-payments/:id` | Remove lançamento |
 
 ## Dashboard

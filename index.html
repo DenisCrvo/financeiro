@@ -147,7 +147,7 @@
     <div class="card-body">
       <form data-form="funcionaria-payment" novalidate>
         <div class="row g-3 mb-3">
-          <div class="col-md-5">
+          <div class="col-md-8">
             <label class="form-label small">Tipo da despesa</label>
             <div class="input-group">
               <select class="form-select" data-field="expense_type_id" required></select>
@@ -159,17 +159,13 @@
               </button>
             </div>
           </div>
-          <div class="col-md-2 col-6">
+          <div class="col-md-4 col-6">
             <label class="form-label small">Ano</label>
             <select class="form-select" data-field="year" required></select>
           </div>
-          <div class="col-md-5">
-            <label class="form-label small">Descrição <span class="text-secondary">(opcional)</span></label>
-            <input type="text" class="form-control" data-field="description" maxlength="120">
-          </div>
         </div>
 
-        <p class="text-secondary small mb-2">Vale-Transporte (Lei 7.418/1985):</p>
+        <p class="text-secondary small mb-2">Vale-Transporte (Lei 7.418/1985) — preenche automaticamente o Valor a Pagar, que pode ser ajustado:</p>
         <div class="row g-3 mb-3">
           <div class="col-md-4 col-6">
             <label class="form-label small">Dias úteis trabalhados</label>
@@ -183,10 +179,10 @@
             </div>
           </div>
           <div class="col-md-4 col-6">
-            <label class="form-label small fw-semibold">Valor Total a Pagar</label>
+            <label class="form-label small fw-semibold">Valor a Pagar</label>
             <div class="input-group">
               <span class="input-group-text">R$</span>
-              <input type="text" class="form-control bg-light fw-semibold" data-display="valor-total" value="0,00" readonly tabindex="-1">
+              <input type="text" class="form-control" data-field="valor_pagar" placeholder="0,00" inputmode="decimal" required>
             </div>
           </div>
         </div>
