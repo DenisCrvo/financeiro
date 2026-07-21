@@ -165,19 +165,22 @@ publicar**.
   mostra o último valor registrado com as opções **Atualizar valor** /
   **Manter lançamento anterior**.
 - Despesas fixas podem ser lançadas em vários meses de uma vez, com o mesmo valor.
+- **Pagamentos à Vista / PIX**: mesmo conceito de Despesas Fixas (lote por
+  vários meses), com Tipo de Despesa próprio (lista independente da de
+  Despesas Fixas e da de Funcionária).
 - **Funcionária — Pagamento Mensal**: lançamento com valor livre,
-  categorizado por Tipo de Despesa própria (lista independente da de
-  Despesas Fixas), também em lote por vários meses. O cálculo de
-  Vale-Transporte (Lei 7.418/1985: dias úteis × valor da passagem
-  ida+volta) preenche automaticamente o campo de valor, que pode ser
-  ajustado livremente antes de salvar.
+  categorizado por Tipo de Despesa própria (lista independente das
+  demais), também em lote por vários meses. O cálculo de Vale-Transporte
+  (Lei 7.418/1985: dias úteis × valor da passagem ida+volta) preenche
+  automaticamente o campo de valor, que pode ser ajustado livremente
+  antes de salvar.
 - Todo lançamento passa por um modal de confirmação com o resumo antes de gravar.
 - A tela de Cadastro tem uma área de **Consultar e Editar Lançamentos**, com
   filtros por tipo/ano/mês e ações de editar/excluir sobre os registros já
-  existentes (Cartões, Despesas Fixas e Funcionária).
-- `credit_cards`, `fixed_expenses` e `funcionaria_pagamentos` têm
-  `created_at`/`updated_at` e alimentam um `audit_log` automático via
-  triggers SQL (consultável direto no banco).
+  existentes (Cartões, Despesas Fixas, Pagamentos à Vista/PIX e Funcionária).
+- `credit_cards`, `fixed_expenses`, `avista_payments` e
+  `funcionaria_pagamentos` têm `created_at`/`updated_at` e alimentam um
+  `audit_log` automático via triggers SQL (consultável direto no banco).
 - Valores nunca negativos (`CHECK` no banco + validação na API + validação no frontend).
 
 ## Checklist de validação

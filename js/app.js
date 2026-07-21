@@ -4,6 +4,7 @@
 import {
   creditCardsApi, expenseTypesApi, fixedExpensesApi,
   funcionariaExpenseTypesApi, funcionariaPaymentsApi,
+  avistaExpenseTypesApi, avistaPaymentsApi,
 } from './api.js';
 import {
   formatCurrencyBRL, attachCurrencyMask, getCurrencyInputValue,
@@ -23,6 +24,7 @@ const CARD_LABELS = { bradesco: 'Bradesco', nubank: 'Nubank' };
 document.addEventListener('DOMContentLoaded', () => {
   initCreditCardsSection();
   initFixedExpensesSection();
+  initAvistaPaymentSection();
   initFuncionariaPaymentSection();
   initQuerySection();
 });
@@ -237,6 +239,90 @@ async function handleFixedExpenseSubmit(e, form, typeSelect, monthsContainer) {
 }
 
 // ---------------------------------------------------------------------------
+// Pagamentos à Vista / PIX
+// ---------------------------------------------------------------------------
+
+function initAvistaPaymentSection() {
+  const form = document.querySelector('[data-form="avista-payment"]');
+  if (!form) return;
+
+  const typeSelect = form.querySelector('[data-field="expense_type_id"]');
+  const yearSelect = form.querySelector('[data-field="year"]');
+  const valueInput = form.querySelector('[data-field="value"]');
+  const monthsContainer = form.querySelector('[data-months-checkboxes]');
+
+  populateYearSelect(yearSelect);
+  attachCurrencyMask(valueInput);
+  renderMonthCheckboxes(monthsContainer, 'av-month');
+  loadExpenseTypesIntoSelect(typeSelect, avistaExpenseTypesApi).catch((err) => showToast(err.message, 'error'));
+
+  form.querySelector('[data-action="new-expense-type"]').addEventListener('click', async () => {
+    const name = await newExpenseTypeModal();
+    if (!name) return;
+    try {
+      const created = await avistaExpenseTypesApi.create({ name });
+      await loadExpenseTypesIntoSelect(typeSelect, avistaExpenseTypesApi);
+      typeSelect.value = String(created.id);
+      showToast('Tipo de despesa cadastrado com sucesso.', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  });
+
+  form.querySelector('[data-action="manage-expense-types"]').addEventListener('click', async () => {
+    let types;
+    try {
+      types = await avistaExpenseTypesApi.list();
+    } catch (err) {
+      showToast(err.message, 'error');
+      return;
+    }
+    await manageExpenseTypesModal(types, {
+      onRename: (id, name) => avistaExpenseTypesApi.update(id, { name }),
+      onDelete: (id) => avistaExpenseTypesApi.remove(id),
+    });
+    await loadExpenseTypesIntoSelect(typeSelect, avistaExpenseTypesApi);
+  });
+
+  form.addEventListener('submit', (e) => handleAvistaPaymentSubmit(e, form, typeSelect, monthsContainer));
+}
+
+async function handleAvistaPaymentSubmit(e, form, typeSelect, monthsContainer) {
+  e.preventDefault();
+  const expenseTypeId = typeSelect.value;
+  const year = Number(form.querySelector('[data-field="year"]').value);
+  const value = getCurrencyInputValue(form.querySelector('[data-field="value"]'));
+  const description = form.querySelector('[data-field="description"]').value.trim();
+  const months = Array.from(monthsContainer.querySelectorAll('input:checked')).map((cb) => Number(cb.value));
+
+  const errors = validateFixedExpenseForm({ expense_type_id: expenseTypeId, year, months, value });
+  if (errors.length) { showToast(errors[0], 'warning'); return; }
+
+  const typeLabel = typeSelect.options[typeSelect.selectedIndex]?.textContent ?? '';
+  const monthsLabel = months.map((m) => monthName(m)).join(', ');
+
+  const confirmed = await confirmModal({
+    title: 'Confirmar pagamento à vista/PIX?',
+    rows: [
+      ['Categoria', typeLabel], ['Ano', String(year)], ['Meses', monthsLabel],
+      ['Valor (por mês)', formatCurrencyBRL(value)], ['Descrição', description || '—'],
+    ],
+  });
+  if (!confirmed) return;
+
+  try {
+    await avistaPaymentsApi.create({ expense_type_id: Number(expenseTypeId), year, months, value, description: description || null });
+    showToast('Pagamento cadastrado com sucesso.', 'success');
+    form.reset();
+    renderMonthCheckboxes(monthsContainer, 'av-month');
+    populateYearSelect(form.querySelector('[data-field="year"]'));
+    refreshQueryResults();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Funcionária — Pagamento Mensal (Vale-Transporte)
 // ---------------------------------------------------------------------------
 
@@ -345,7 +431,10 @@ async function handleFuncionariaPaymentSubmit(e, form, typeSelect, monthsContain
 // Consultar e Editar Lançamentos
 // ---------------------------------------------------------------------------
 
-const TABLE_LABELS = { credit_cards: 'Cartão de Crédito', fixed_expenses: 'Despesa Fixa', funcionaria_payments: 'Funcionária' };
+const TABLE_LABELS = {
+  credit_cards: 'Cartão de Crédito', fixed_expenses: 'Despesa Fixa',
+  avista_payments: 'Pagamento à Vista/PIX', funcionaria_payments: 'Funcionária',
+};
 
 function buildEditSpec(tableName, record) {
   if (tableName === 'credit_cards') {
@@ -356,6 +445,19 @@ function buildEditSpec(tableName, record) {
         ['Ano', String(record.year)], ['Mês', monthName(record.month)],
       ],
       fields: [{ key: 'value', label: 'Valor da fatura', type: 'currency', value: record.value }],
+    };
+  }
+  if (tableName === 'avista_payments') {
+    return {
+      title: 'Editar pagamento à vista/PIX',
+      readOnlyRows: [
+        ['Categoria', record.expense_type_name ?? '—'],
+        ['Ano', String(record.year)], ['Mês', monthName(record.month)],
+      ],
+      fields: [
+        { key: 'value', label: 'Valor', type: 'currency', value: record.value },
+        { key: 'description', label: 'Descrição', type: 'text', value: record.description },
+      ],
     };
   }
   if (tableName === 'funcionaria_payments') {
@@ -435,15 +537,17 @@ async function refreshQueryResults() {
   const month = document.querySelector('[data-query-filter="month"]').value;
 
   try {
-    const [cards, fixed, funcionaria] = await Promise.all([
+    const [cards, fixed, avista, funcionaria] = await Promise.all([
       tableFilter && tableFilter !== 'credit_cards' ? [] : creditCardsApi.list(year),
       tableFilter && tableFilter !== 'fixed_expenses' ? [] : fixedExpensesApi.list(year),
+      tableFilter && tableFilter !== 'avista_payments' ? [] : avistaPaymentsApi.list(year),
       tableFilter && tableFilter !== 'funcionaria_payments' ? [] : funcionariaPaymentsApi.list(year),
     ]);
 
     let records = [
       ...cards.map((r) => ({ table_name: 'credit_cards', record: r })),
       ...fixed.map((r) => ({ table_name: 'fixed_expenses', record: r })),
+      ...avista.map((r) => ({ table_name: 'avista_payments', record: r })),
       ...funcionaria.map((r) => ({ table_name: 'funcionaria_payments', record: r })),
     ];
 
@@ -482,7 +586,10 @@ async function refreshQueryResults() {
   }
 }
 
-const QUERY_API = { credit_cards: creditCardsApi, fixed_expenses: fixedExpensesApi, funcionaria_payments: funcionariaPaymentsApi };
+const QUERY_API = {
+  credit_cards: creditCardsApi, fixed_expenses: fixedExpensesApi,
+  avista_payments: avistaPaymentsApi, funcionaria_payments: funcionariaPaymentsApi,
+};
 
 async function handleEditQueryRecord(tableName, recordId) {
   const api = QUERY_API[tableName];

@@ -7,6 +7,8 @@ import * as expenseTypes from './routes/expenseTypes.js';
 import * as fixedExpenses from './routes/fixedExpenses.js';
 import * as funcionariaExpenseTypes from './routes/funcionariaExpenseTypes.js';
 import * as funcionariaPayments from './routes/funcionariaPayments.js';
+import * as avistaExpenseTypes from './routes/avistaExpenseTypes.js';
+import * as avistaPayments from './routes/avistaPayments.js';
 import * as dashboard from './routes/dashboard.js';
 
 // Rotas estáticas (sem :id) — avaliadas antes das rotas com parâmetro.
@@ -27,6 +29,12 @@ const STATIC_ROUTES = [
   { method: 'GET', path: '/api/funcionaria-payments', handler: funcionariaPayments.listFuncionariaPayments },
   { method: 'POST', path: '/api/funcionaria-payments', handler: funcionariaPayments.createFuncionariaPayments },
 
+  { method: 'GET', path: '/api/avista-expense-types', handler: avistaExpenseTypes.listAvistaExpenseTypes },
+  { method: 'POST', path: '/api/avista-expense-types', handler: avistaExpenseTypes.createAvistaExpenseType },
+
+  { method: 'GET', path: '/api/avista-payments', handler: avistaPayments.listAvistaPayments },
+  { method: 'POST', path: '/api/avista-payments', handler: avistaPayments.createAvistaPayments },
+
   { method: 'GET', path: '/api/dashboard', handler: dashboard.getDashboard },
   { method: 'GET', path: '/api/dashboard/last-update', handler: dashboard.getLastUpdate },
 ];
@@ -38,6 +46,8 @@ const ID_ROUTES = [
   { prefix: '/api/fixed-expenses/', handlers: { GET: fixedExpenses.getFixedExpense, PUT: fixedExpenses.updateFixedExpense, DELETE: fixedExpenses.deleteFixedExpense } },
   { prefix: '/api/funcionaria-expense-types/', handlers: { PUT: funcionariaExpenseTypes.updateFuncionariaExpenseType, DELETE: funcionariaExpenseTypes.deleteFuncionariaExpenseType } },
   { prefix: '/api/funcionaria-payments/', handlers: { GET: funcionariaPayments.getFuncionariaPayment, PUT: funcionariaPayments.updateFuncionariaPayment, DELETE: funcionariaPayments.deleteFuncionariaPayment } },
+  { prefix: '/api/avista-expense-types/', handlers: { PUT: avistaExpenseTypes.updateAvistaExpenseType, DELETE: avistaExpenseTypes.deleteAvistaExpenseType } },
+  { prefix: '/api/avista-payments/', handlers: { GET: avistaPayments.getAvistaPayment, PUT: avistaPayments.updateAvistaPayment, DELETE: avistaPayments.deleteAvistaPayment } },
 ];
 
 // Rotas de ação — POST /api/<recurso>/:id/<acao>.

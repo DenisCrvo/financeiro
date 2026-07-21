@@ -38,6 +38,32 @@ Requisições sem token válido recebem `401 Não autorizado`.
 | PUT | `/api/fixed-expenses/:id` | Atualiza `{value, description?}` |
 | DELETE | `/api/fixed-expenses/:id` | Remove lançamento |
 
+## Pagamentos à Vista / PIX
+
+Mesmo conceito de Despesas Fixas (lançamento em lote por vários meses),
+porém com taxonomia de tipos própria (`avista_expense_types`),
+**independente** de `expense_types` (Despesas Fixas) e de
+`funcionaria_expense_types` (Funcionária) — as listas não se misturam.
+
+### Tipos de Despesa à Vista/PIX
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/api/avista-expense-types` | Lista tipos cadastrados |
+| POST | `/api/avista-expense-types` | Cria `{name, icon?}`. Retorna 409 se já existir |
+| PUT | `/api/avista-expense-types/:id` | Renomeia `{name, icon?}`. Retorna 409 se o novo nome já existir em outro tipo |
+| DELETE | `/api/avista-expense-types/:id` | Remove (bloqueado se houver pagamentos associados) |
+
+### Pagamentos
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/api/avista-payments?year=2026` | Lista lançamentos (com nome/ícone do tipo) |
+| GET | `/api/avista-payments/:id` | Busca um lançamento específico (com nome/ícone do tipo) |
+| POST | `/api/avista-payments` | Cria em lote `{expense_type_id, year, months: [1,2,3], value, description?}` — uma linha por mês |
+| PUT | `/api/avista-payments/:id` | Atualiza `{value, description?}` |
+| DELETE | `/api/avista-payments/:id` | Remove lançamento |
+
 ## Funcionária — Pagamento Mensal
 
 Pagamento mensal com valor de lançamento livre (`valor_pagar`) — sem

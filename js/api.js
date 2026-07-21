@@ -89,6 +89,21 @@ export const funcionariaPaymentsApi = {
   remove: (id) => request(`/api/funcionaria-payments/${id}`, { method: 'DELETE' }),
 };
 
+export const avistaExpenseTypesApi = {
+  list: () => request('/api/avista-expense-types'),
+  create: (data) => request('/api/avista-expense-types', { method: 'POST', body: data }),
+  update: (id, data) => request(`/api/avista-expense-types/${id}`, { method: 'PUT', body: data }),
+  remove: (id) => request(`/api/avista-expense-types/${id}`, { method: 'DELETE' }),
+};
+
+export const avistaPaymentsApi = {
+  list: (year) => request(`/api/avista-payments${qs({ year })}`),
+  getById: (id) => request(`/api/avista-payments/${id}`),
+  create: (data) => request('/api/avista-payments', { method: 'POST', body: data }),
+  update: (id, data) => request(`/api/avista-payments/${id}`, { method: 'PUT', body: data }),
+  remove: (id) => request(`/api/avista-payments/${id}`, { method: 'DELETE' }),
+};
+
 export const dashboardApi = {
   get: (year) => request(`/api/dashboard${qs({ year })}`),
   lastUpdate: () => request('/api/dashboard/last-update'),

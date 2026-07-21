@@ -4,7 +4,8 @@ import { dashboardApi } from './api.js';
 import { formatCurrencyBRL, populateYearSelect, formatDateTimeBR } from './utils.js';
 import { showToast } from '../components/toast.js';
 
-const CHART_COLOR = '#2a78d6';
+const DESPESAS_CHART_COLOR = '#2a78d6';
+const CARDS_CHART_COLOR = '#008300';
 const GRID_COLOR = '#e1e0d9';
 const INK_MUTED = '#898781';
 const INK_SECONDARY = '#52514e';
@@ -59,7 +60,7 @@ function renderCards(data) {
   otherPeriodEl.textContent = `${data.next_month.month_name}/${data.next_month.year}`;
 }
 
-function buildMonthlyBarChart(canvas, labels, values, seriesLabel) {
+function buildMonthlyBarChart(canvas, labels, values, seriesLabel, color) {
   return new Chart(canvas, {
     type: 'bar',
     data: {
@@ -67,7 +68,7 @@ function buildMonthlyBarChart(canvas, labels, values, seriesLabel) {
       datasets: [{
         label: seriesLabel,
         data: values,
-        backgroundColor: CHART_COLOR,
+        backgroundColor: color,
         borderRadius: 4,
         maxBarThickness: 24,
       }],
@@ -113,7 +114,7 @@ function renderChart(monthlyTotals) {
     chartInstance.update();
     return;
   }
-  chartInstance = buildMonthlyBarChart(canvas, labels, values, 'Despesas totais');
+  chartInstance = buildMonthlyBarChart(canvas, labels, values, 'Despesas totais', DESPESAS_CHART_COLOR);
 }
 
 function renderCardsChart(monthlyTotals) {
@@ -127,7 +128,7 @@ function renderCardsChart(monthlyTotals) {
     cardsChartInstance.update();
     return;
   }
-  cardsChartInstance = buildMonthlyBarChart(canvas, labels, values, 'Total Cartões');
+  cardsChartInstance = buildMonthlyBarChart(canvas, labels, values, 'Total Cartões', CARDS_CHART_COLOR);
 }
 
 function renderTable(monthlyTotals) {
