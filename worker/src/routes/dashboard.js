@@ -23,11 +23,19 @@ async function sumCards(env, year, month) {
 }
 
 async function sumOtherExpenses(env, year, month) {
-  const fixedRow = await env.DB.prepare(
-    'SELECT COALESCE(SUM(value), 0) AS total FROM fixed_expenses WHERE year = ? AND month = ?'
-  ).bind(year, month).first();
+  const [fixedRow, funcionariaRow, avistaRow] = await Promise.all([
+    env.DB.prepare(
+      'SELECT COALESCE(SUM(value), 0) AS total FROM fixed_expenses WHERE year = ? AND month = ?'
+    ).bind(year, month).first(),
+    env.DB.prepare(
+      'SELECT COALESCE(SUM(valor_pagar), 0) AS total FROM funcionaria_pagamentos WHERE year = ? AND month = ?'
+    ).bind(year, month).first(),
+    env.DB.prepare(
+      'SELECT COALESCE(SUM(value), 0) AS total FROM avista_payments WHERE year = ? AND month = ?'
+    ).bind(year, month).first(),
+  ]);
 
-  return fixedRow.total;
+  return fixedRow.total + funcionariaRow.total + avistaRow.total;
 }
 
 export async function getDashboard(request, env, url) {
@@ -58,7 +66,7 @@ export async function getDashboard(request, env, url) {
 }
 
 export async function getLastUpdate(request, env) {
-  const tables = ['credit_cards', 'fixed_expenses'];
+  const tables = ['credit_cards', 'fixed_expenses', 'funcionaria_pagamentos', 'avista_payments'];
   const timestamps = [];
   for (const table of tables) {
     const row = await env.DB.prepare(`SELECT MAX(updated_at) AS last FROM ${table}`).first();
