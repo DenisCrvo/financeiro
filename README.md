@@ -1,49 +1,36 @@
 # Financeiro — Sistema de Previsão de Despesas Pessoais
 
-Sistema web para cadastro de despesas e **previsão** de gastos futuros (não apenas
-controle do que já foi gasto). Composto por uma tela de cadastro e um dashboard
-financeiro, hospedados no GitHub Pages, com API própria em Cloudflare Workers e
-persistência em Cloudflare D1.
+Sistema web para cadastro de despesas e **previsão** de gastos futuros (não
+apenas controle do que já foi gasto). Composto por uma tela de cadastro e um
+dashboard financeiro, hospedados no GitHub Pages, com API própria em
+Cloudflare Workers e persistência em Cloudflare D1.
 
 - **Frontend:** HTML5 + CSS3 + JavaScript ES6+ (módulos nativos) + Bootstrap 5 + Chart.js
 - **Backend:** Cloudflare Workers (API REST, sem framework)
 - **Banco:** Cloudflare D1 (SQLite)
 - **Hospedagem do frontend:** GitHub Pages
 
-## Estrutura do projeto
+> Uso pessoal/doméstico, single-user. Documentação técnica completa
+> (arquitetura, regras de negócio, API, banco de dados, decisões de projeto)
+> em [`docs/`](docs/INDEX.md) — este README cobre só o essencial para
+> instalar, rodar e publicar.
+
+## Estrutura do projeto (visão rápida)
 
 ```
 financeiro/
-├─ index.html              # Cadastro de despesas
-├─ dashboard.html           # Dashboard financeiro
-├─ css/style.css
-├─ js/
-│  ├─ app.js                # Orquestração da tela de cadastro
-│  ├─ dashboard.js          # Orquestração do dashboard
-│  ├─ api.js                # Comunicação com a API (fetch + API key)
-│  └─ utils.js              # Formatação, máscaras, datas
-├─ components/
-│  ├─ modal.js               # Modal de confirmação e de nova despesa
-│  └─ toast.js
-├─ services/
-│  └─ financeiroService.js   # Regras de negócio (cálculo de VT, validações)
-├─ assets/icons/
-├─ worker/                   # API — NÃO é publicado no GitHub Pages
-│  ├─ src/index.js            # Router + autenticação + CORS
-│  ├─ src/utils.js
-│  ├─ src/routes/*.js         # Um arquivo por recurso da API
-│  ├─ migrations/0001_init.sql
-│  ├─ migrations/0002_drop_employee_features.sql
-│  ├─ wrangler.toml
-│  ├─ package.json
-│  └─ API.md                  # Documentação dos endpoints
-├─ .gitignore
-└─ README.md
+├─ index.html / dashboard.html   # As duas páginas do frontend
+├─ css/, js/, components/, services/, assets/   # Frontend estático
+├─ worker/                       # API (Cloudflare Workers) — NÃO publicada no GitHub Pages
+│  ├─ src/                         # Router, rotas, utilitários
+│  ├─ migrations/                  # Schema versionado do banco D1
+│  └─ wrangler.toml / package.json
+├─ CLAUDE.md                     # Contexto rápido do projeto (para sessões de IA)
+└─ docs/                         # Documentação técnica completa — ver docs/INDEX.md
 ```
 
-> O diretório `worker/` roda em Cloudflare Workers e **não deve** ser incluído
-> na publicação do GitHub Pages — ele contém a lógica de backend e, em
-> desenvolvimento local, a chave de API de teste (`.dev.vars`, já no `.gitignore`).
+Detalhamento completo de pastas, módulos e diagramas:
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Como instalar
 
@@ -71,8 +58,9 @@ npm install
    ```bash
    npx wrangler d1 migrations apply financeiro-db --remote
    ```
-   Para testar localmente antes de publicar, use `--local` no lugar de `--remote`
-   (roda um SQLite local via Miniflare, sem tocar no banco de produção).
+   Para testar localmente antes de publicar, use `--local` no lugar de
+   `--remote` (roda um SQLite local via Miniflare, sem tocar no banco de
+   produção).
 
 ## Como configurar o Worker (API)
 
@@ -81,19 +69,15 @@ npm install
    ```bash
    npx wrangler secret put API_KEY
    ```
-2. Revise `worker/wrangler.toml` — o campo `ALLOWED_ORIGIN` deve ser exatamente
-   a URL do seu GitHub Pages (ex.: `https://SEU_USUARIO.github.io`), usada para
-   restringir o CORS.
+2. Revise `worker/wrangler.toml` — o campo `ALLOWED_ORIGIN` deve ser
+   exatamente a URL do seu GitHub Pages (ex.: `https://SEU_USUARIO.github.io`),
+   usada para restringir o CORS.
 3. Publique o Worker:
    ```bash
    npx wrangler deploy
    ```
    O comando imprime a URL pública, algo como
    `https://financeiro-api.SEU_SUBDOMINIO.workers.dev`.
-
-### Documentação da API
-
-Ver [`worker/API.md`](worker/API.md) para a lista completa de endpoints, payloads e códigos de erro.
 
 ## Como alterar a URL da API
 
@@ -128,72 +112,27 @@ python3 -m http.server 8080
 # ou: npx serve .
 ```
 Acesse `http://localhost:8080/index.html`. Aponte temporariamente
-`API_BASE_URL`/`API_KEY` em `js/api.js` para `http://localhost:8787` e a chave
-de `.dev.vars` — **lembre-se de reverter para os valores de produção antes de
-publicar**.
+`API_BASE_URL`/`API_KEY` em `js/api.js` para `http://localhost:8787` e a
+chave de `.dev.vars` — **lembre-se de reverter para os valores de produção
+antes de publicar**.
 
-## Como publicar no GitHub Pages
+## Como publicar (deploy)
 
-1. Crie um repositório no GitHub (ex.: `financeiro`) e envie o projeto:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git branch -M main
-   git remote add origin https://github.com/SEU_USUARIO/financeiro.git
-   git push -u origin main
-   ```
-2. No GitHub: **Settings → Pages → Source → Deploy from a branch**, selecione
-   a branch `main` e a pasta `/ (root)`.
-3. O site fica disponível em `https://SEU_USUARIO.github.io/financeiro/`.
-4. Confirme que `worker/wrangler.toml` → `ALLOWED_ORIGIN` está com essa mesma
-   origem (`https://SEU_USUARIO.github.io`, sem o caminho `/financeiro/`) e
-   rode `npx wrangler deploy` novamente se precisar ajustar.
-
-## Como fazer deploy de uma atualização
+Resumo rápido — passo a passo completo (GitHub Pages, Workers, D1,
+migrations, checklist de atualização de produção) em
+[`docs/DEPLOY.md`](docs/DEPLOY.md):
 
 - **Frontend:** `git push` para `main` — o GitHub Pages republica automaticamente.
 - **Backend:** `cd worker && npx wrangler deploy`.
-- **Mudanças no banco:** crie uma nova migration em `worker/migrations/`
-  (ex.: `0002_algo.sql`) e rode
-  `npx wrangler d1 migrations apply financeiro-db --remote`. Nunca edite
-  `0001_init.sql` depois de já ter rodado em produção.
+- **Banco:** nova migration em `worker/migrations/` (nunca editar uma já
+  aplicada em produção) + `npx wrangler d1 migrations apply financeiro-db --remote`.
 
-## Regras de negócio implementadas
+## Documentação técnica
 
-- Uma fatura de cartão por (cartão, ano, mês); ao repetir o mês, a interface
-  mostra o último valor registrado com as opções **Atualizar valor** /
-  **Manter lançamento anterior**.
-- Despesas fixas podem ser lançadas em vários meses de uma vez, com o mesmo valor.
-- **Pagamentos à Vista / PIX**: mesmo conceito de Despesas Fixas (lote por
-  vários meses), com Tipo de Despesa próprio (lista independente da de
-  Despesas Fixas e da de Funcionária).
-- **Funcionária — Pagamento Mensal**: lançamento com valor livre,
-  categorizado por Tipo de Despesa própria (lista independente das
-  demais), também em lote por vários meses. O cálculo de Vale-Transporte
-  (Lei 7.418/1985: dias úteis × valor da passagem ida+volta) preenche
-  automaticamente o campo de valor, que pode ser ajustado livremente
-  antes de salvar.
-- Todo lançamento passa por um modal de confirmação com o resumo antes de gravar.
-- A tela de Cadastro tem uma área de **Consultar e Editar Lançamentos**, com
-  filtros por tipo/ano/mês e ações de editar/excluir sobre os registros já
-  existentes (Cartões, Despesas Fixas, Pagamentos à Vista/PIX e Funcionária).
-- `credit_cards`, `fixed_expenses`, `avista_payments` e
-  `funcionaria_pagamentos` têm `created_at`/`updated_at` e alimentam um
-  `audit_log` automático via triggers SQL (consultável direto no banco).
-- Valores nunca negativos (`CHECK` no banco + validação na API + validação no frontend).
-
-## Checklist de validação
-
-- [x] Arquitetura desacoplada (frontend estático + API + banco), documentada na Etapa 1
-- [x] Banco D1 com tabelas normalizadas, PKs, FKs, `CHECK`, índices e triggers de auditoria (`worker/migrations/`)
-- [x] API REST completa em Cloudflare Workers com autenticação por API Key e CORS (`worker/src/`, documentada em `worker/API.md`)
-- [x] Interface de cadastro: cartões (Bradesco/Nubank), despesas fixas com tipos dinâmicos, consulta/edição de lançamentos
-- [x] Fluxo de conflito (atualizar/manter) e modal de confirmação antes de todo lançamento
-- [x] Dashboard com os 2 cards, 2 gráficos de barras Jan-Dez (Chart.js), filtro por ano, última atualização
-- [x] Testado de ponta a ponta em todas as etapas: API real (`wrangler dev` + D1 local) e interface real em navegador (Chrome headless)
-- [x] `wrangler.toml`, migrations e `.gitignore` prontos para deploy
-- [x] README com instalação, configuração do D1/Workers e publicação no GitHub Pages
+Este README cobre só instalação/execução/deploy. Para entender o sistema em
+profundidade (arquitetura, regras de negócio, API, banco, decisões de
+projeto, convenções, roadmap), veja **[`docs/INDEX.md`](docs/INDEX.md)** —
+o índice de toda a documentação técnica do projeto.
 
 ## Licença
 
